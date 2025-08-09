@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Combined Image Comparison Report - 3 Pairs</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: #f8f9fa;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+      }
+
+      .summary-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        padding: 30px;
+        background: #f8f9fa;
+      }
+
+      .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .stat-number {
+        font-size: 2em;
+        font-weight: bold;
+        color: #007bff;
+      }
+
+      .stat-label {
+        color: #666;
+        text-transform: uppercase;
+        font-size: 0.9em;
+      }
+
+      .comparison-item {
+        border-bottom: 1px solid #eee;
+        padding: 40px;
+      }
+
+      .comparison-item:last-child {
+        border-bottom: none;
+      }
+
+      .comparison-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .pair-title {
+        font-size: 1.5em;
+        color: #333;
+        font-weight: 600;
+      }
+
+      .status-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.8em;
+      }
+
+      .status-approved {
+        background: #d4edda;
+        color: #155724;
+      }
+
+      .status-review {
+        background: #fff3cd;
+        color: #856404;
+      }
+
+      .status-rejected {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .image-comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+      }
+
+      .image-container {
+        text-align: center;
+      }
+
+      .image-container img {
+        max-width: 100%;
+        height: 250px;
+        object-fit: cover;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .before-label {
+        background: #dc3545;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 15px;
+        display: inline-block;
+        margin-bottom: 15px;
+        font-weight: bold;
+      }
+
+      .after-label {
+        background: #28a745;
+        color: white;
+        padding: 8px 15px;
+        border-radius: 15px;
+        display: inline-block;
+        margin-bottom: 15px;
+        font-weight: bold;
+      }
+
+      .analysis-content {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+      }
+
+      .analysis-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        background: white;
+      }
+
+      .analysis-content table th,
+      .analysis-content table td {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .analysis-content table th {
+        background: #007bff;
+        color: white;
+      }
+
+      .footer {
+        background: #333;
+        color: white;
+        text-align: center;
+        padding: 20px;
+      }
+
+      @media (max-width: 768px) {
+        .image-comparison {
+          grid-template-columns: 1fr;
+        }
+
+        .comparison-header {
+          flex-direction: column;
+          gap: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <h1>📋 Image Comparison Report</h1>
+        <p>Generated: 20250808_123729 | 3 Comparisons</p>
+      </div>
+
+      <!-- Summary Stats -->
+      <div class="summary-stats">
+        <div class="stat-card">
+          <div class="stat-number">3</div>
+          <div class="stat-label">Total Pairs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">3</div>
+          <div class="stat-label">Approved</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">95.3%</div>
+          <div class="stat-label">Average Score</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">6</div>
+          <div class="stat-label">Images</div>
+        </div>
+      </div>
+
+      <!-- Comparisons -->
+      
+      <div class="comparison-item">
+        <!-- Header -->
+        <div class="comparison-header">
+          <div class="pair-title">
+            🔍 Comparison 1
+          </div>
+          <div>
+            <div class="status-badge status-approved">
+              Approved
+            </div>
+            <div style="margin-top: 10px; font-weight: bold">
+              Score: 98/100
+            </div>
+          </div>
+        </div>
+
+        <!-- Images -->
+        <div class="image-comparison">
+          <div class="image-container">
+            <div class="before-label">BEFORE</div>
+            <img
+              src="/uploads/20250808_123612_00_Before.jpg"
+              alt="Before 1"
+            />
+          </div>
+          <div class="image-container">
+            <div class="after-label">AFTER</div>
+            <img
+              src="/uploads/20250808_123618_01_After.jpg"
+              alt="After 1"
+            />
+          </div>
+        </div>
+
+        <!-- Analysis -->
+        <div class="analysis-content"><hr />
+<p><em>🖼 Title:</em> Window Replacement</p>
+<p><em>🔍 Validation Checklist</em></p>
+<table>
+<thead>
+<tr>
+<th>Factor</th>
+<th>Analysis</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Location Match</td>
+<td>The window frame, surrounding structure, and background elements (e.g., tree and sky) are consistent between images.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Duplicate Check</td>
+<td>The images are distinct, showing clear "Before" and "After" states.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Tampering Check</td>
+<td>No evidence of editing or manipulation is visible.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Area Consistency</td>
+<td>The same window and surrounding area are depicted in both images.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Work Scope</td>
+<td>The broken window was replaced with a new, intact window as expected.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Photo Quality</td>
+<td>Both images are clear, well-lit, and focused.</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<p><em>🚰 Feature Comparison</em></p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Before</th>
+<th>After</th>
+<th>Score (1-10)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Damage Condition</td>
+<td>Broken glass with sharp edges and missing sections.</td>
+<td>New, intact glass with no visible damage.</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Cleanliness</td>
+<td>Debris and dirt visible around the broken window.</td>
+<td>Clean and free of debris.</td>
+<td>9</td>
+</tr>
+<tr>
+<td>Safety Compliance</td>
+<td>Unsafe due to sharp edges and potential for injury.</td>
+<td>Safe and secure with no hazards.</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Work Completion</td>
+<td>Broken window not repaired.</td>
+<td>Fully replaced window installed.</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Area Identification</td>
+<td>Same window frame and background elements visible.</td>
+<td>Same window frame and background elements visible.</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Visual Consistency</td>
+<td>Consistent framing, angle, and lighting.</td>
+<td>Consistent framing, angle, and lighting.</td>
+<td>10</td>
+</tr>
+</tbody>
+</table>
+<p><em>💵 Estimated Cost:</em> $150-$250<br />
+<em>📈 Confidence:</em> 98%<br />
+<em>🧱 Total Score:</em> 98  </p>
+<p><em>📟 Verdict:</em><br />
+- ✅ Approved (≥80)</p>
+<p><em>📄 Summary:</em><br />
+The "Before" image shows a broken window with sharp edges and missing glass, posing safety hazards and structural vulnerability. The "After" image demonstrates a complete replacement with a new, intact window, meeting safety and aesthetic standards. The work aligns with the expected scope, and the images are consistent in location, angle, and quality. No concerns regarding manipulation or authenticity were detected.</p>
+<hr />
+<pre><code class="language-json">{
+  &quot;score&quot;: 98,
+  &quot;verdict&quot;: &quot;✅ Approved&quot;,
+  &quot;confidence&quot;: 98,
+  &quot;repair_cost&quot;: &quot;$150-$250&quot;,
+  &quot;features&quot;: {
+    &quot;damage_condition&quot;: {&quot;before&quot;: &quot;Broken glass with sharp edges and missing sections.&quot;, &quot;after&quot;: &quot;New, intact glass with no visible damage.&quot;, &quot;score&quot;: 10},
+    &quot;cleanliness&quot;: {&quot;before&quot;: &quot;Debris and dirt visible around the broken window.&quot;, &quot;after&quot;: &quot;Clean and free of debris.&quot;, &quot;score&quot;: 9},
+    &quot;safety_compliance&quot;: {&quot;before&quot;: &quot;Unsafe due to sharp edges and potential for injury.&quot;, &quot;after&quot;: &quot;Safe and secure with no hazards.&quot;, &quot;score&quot;: 10},
+    &quot;work_completion&quot;: {&quot;before&quot;: &quot;Broken window not repaired.&quot;, &quot;after&quot;: &quot;Fully replaced window installed.&quot;, &quot;score&quot;: 10},
+    &quot;area_identification&quot;: {&quot;before&quot;: &quot;Same window frame and background elements visible.&quot;, &quot;after&quot;: &quot;Same window frame and background elements visible.&quot;, &quot;score&quot;: 10},
+    &quot;visual_consistency&quot;: {&quot;before&quot;: &quot;Consistent framing, angle, and lighting.&quot;, &quot;after&quot;: &quot;Consistent framing, angle, and lighting.&quot;, &quot;score&quot;: 10}
+  }
+}
+</code></pre></div>
+      </div>
+      
+      <div class="comparison-item">
+        <!-- Header -->
+        <div class="comparison-header">
+          <div class="pair-title">
+            🔍 Comparison 2
+          </div>
+          <div>
+            <div class="status-badge status-approved">
+              Approved
+            </div>
+            <div style="margin-top: 10px; font-weight: bold">
+              Score: 92/100
+            </div>
+          </div>
+        </div>
+
+        <!-- Images -->
+        <div class="image-comparison">
+          <div class="image-container">
+            <div class="before-label">BEFORE</div>
+            <img
+              src="/uploads/20250808_123621_02_img1.jpg"
+              alt="Before 2"
+            />
+          </div>
+          <div class="image-container">
+            <div class="after-label">AFTER</div>
+            <img
+              src="/uploads/20250808_123633_03_img2.jpg"
+              alt="After 2"
+            />
+          </div>
+        </div>
+
+        <!-- Analysis -->
+        <div class="analysis-content"><hr />
+<p><em>🖼 Title:</em> Lawn Mowing and Yard Maintenance</p>
+<p><em>🔍 Validation Checklist</em></p>
+<table>
+<thead>
+<tr>
+<th>Factor</th>
+<th>Analysis</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Location Match</td>
+<td>Same backyard area, consistent elements like fence, stepping stones, and plants visible</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Duplicate Check</td>
+<td>Images are distinct, showing clear changes in grass condition</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Tampering Check</td>
+<td>No evidence of editing or manipulation detected</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Area Consistency</td>
+<td>Both images depict the same yard area with identical structural features</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Work Scope</td>
+<td>Lawn mowing and yard maintenance are visible in the "After" image</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Photo Quality</td>
+<td>Images are clear, well-lit, and focused</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<p><em>🚰 Feature Comparison</em></p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Before</th>
+<th>After</th>
+<th>Score (1-10)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Damage Condition</td>
+<td>Overgrown grass and uneven yard</td>
+<td>Grass trimmed and yard leveled</td>
+<td>8</td>
+</tr>
+<tr>
+<td>Cleanliness</td>
+<td>Grass appears untidy</td>
+<td>Grass is neatly maintained</td>
+<td>9</td>
+</tr>
+<tr>
+<td>Safety Compliance</td>
+<td>Potential tripping hazards due to overgrown grass</td>
+<td>Improved safety with trimmed grass</td>
+<td>8</td>
+</tr>
+<tr>
+<td>Work Completion</td>
+<td>Lawn appears unmaintained</td>
+<td>Lawn mowing completed</td>
+<td>9</td>
+</tr>
+<tr>
+<td>Area Identification</td>
+<td>Consistent yard features visible</td>
+<td>Same features visible</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Visual Consistency</td>
+<td>Lighting and angles match</td>
+<td>Lighting and angles match</td>
+<td>10</td>
+</tr>
+</tbody>
+</table>
+<p><em>💵 Estimated Cost:</em> $50-$100<br />
+<em>📈 Confidence:</em> 95%<br />
+<em>🧱 Total Score:</em> 92  </p>
+<p><em>📟 Verdict:</em><br />
+- ✅ Approved (≥80)</p>
+<p><em>📄 Summary:</em><br />
+The "Before" image shows a backyard with overgrown grass and an untidy appearance. The "After" image demonstrates clear improvements, including trimmed grass and a leveled yard, enhancing both cleanliness and safety. The location and features are consistent between the images, and the work scope aligns with expectations for lawn mowing and yard maintenance. No signs of tampering or duplication were detected, and the photo quality is excellent. This work order is approved with high confidence.</p>
+<hr />
+<pre><code class="language-json">{
+  &quot;score&quot;: 92,
+  &quot;verdict&quot;: &quot;✅ Approved&quot;,
+  &quot;confidence&quot;: 95,
+  &quot;repair_cost&quot;: &quot;$50-$100&quot;,
+  &quot;features&quot;: {
+    &quot;damage_condition&quot;: {&quot;before&quot;: &quot;Overgrown grass and uneven yard&quot;, &quot;after&quot;: &quot;Grass trimmed and yard leveled&quot;, &quot;score&quot;: 8},
+    &quot;cleanliness&quot;: {&quot;before&quot;: &quot;Grass appears untidy&quot;, &quot;after&quot;: &quot;Grass is neatly maintained&quot;, &quot;score&quot;: 9},
+    &quot;safety_compliance&quot;: {&quot;before&quot;: &quot;Potential tripping hazards due to overgrown grass&quot;, &quot;after&quot;: &quot;Improved safety with trimmed grass&quot;, &quot;score&quot;: 8},
+    &quot;work_completion&quot;: {&quot;before&quot;: &quot;Lawn appears unmaintained&quot;, &quot;after&quot;: &quot;Lawn mowing completed&quot;, &quot;score&quot;: 9},
+    &quot;area_identification&quot;: {&quot;before&quot;: &quot;Consistent yard features visible&quot;, &quot;after&quot;: &quot;Same features visible&quot;, &quot;score&quot;: 10},
+    &quot;visual_consistency&quot;: {&quot;before&quot;: &quot;Lighting and angles match&quot;, &quot;after&quot;: &quot;Lighting and angles match&quot;, &quot;score&quot;: 10}
+  }
+}
+</code></pre></div>
+      </div>
+      
+      <div class="comparison-item">
+        <!-- Header -->
+        <div class="comparison-header">
+          <div class="pair-title">
+            🔍 Comparison 3
+          </div>
+          <div>
+            <div class="status-badge status-approved">
+              Approved
+            </div>
+            <div style="margin-top: 10px; font-weight: bold">
+              Score: 96/100
+            </div>
+          </div>
+        </div>
+
+        <!-- Images -->
+        <div class="image-comparison">
+          <div class="image-container">
+            <div class="before-label">BEFORE</div>
+            <img
+              src="/uploads/20250808_123644_05_img4.jpg"
+              alt="Before 3"
+            />
+          </div>
+          <div class="image-container">
+            <div class="after-label">AFTER</div>
+            <img
+              src="/uploads/20250808_123637_04_img3.jpg"
+              alt="After 3"
+            />
+          </div>
+        </div>
+
+        <!-- Analysis -->
+        <div class="analysis-content"><hr />
+<p><em>🖼 Title:</em> Hedge Trimming and Maintenance</p>
+<p><em>🔍 Validation Checklist</em></p>
+<table>
+<thead>
+<tr>
+<th>Factor</th>
+<th>Analysis</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Location Match</td>
+<td>The background elements, such as the house, trees, and road layout, are consistent between the images.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Duplicate Check</td>
+<td>The images are not identical, and the hedge has visibly changed.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Tampering Check</td>
+<td>No evidence of image editing or manipulation is detected.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Area Consistency</td>
+<td>The same hedge and surrounding area are visible in both images.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Work Scope</td>
+<td>The hedge has been trimmed and shaped as expected.</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Photo Quality</td>
+<td>Both images are clear, well-lit, and focused.</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<p><em>🚰 Feature Comparison</em></p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Before</th>
+<th>After</th>
+<th>Score (1-10)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Damage Condition</td>
+<td>Overgrown hedge with uneven growth.</td>
+<td>Hedge is neatly trimmed and even.</td>
+<td>9</td>
+</tr>
+<tr>
+<td>Cleanliness</td>
+<td>Grass and hedge appear untidy.</td>
+<td>Area is clean and well-maintained.</td>
+<td>9</td>
+</tr>
+<tr>
+<td>Safety Compliance</td>
+<td>Overgrowth could obstruct visibility.</td>
+<td>Improved visibility and safety.</td>
+<td>9</td>
+</tr>
+<tr>
+<td>Work Completion</td>
+<td>Hedge is untrimmed.</td>
+<td>Hedge trimming is completed.</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Area Identification</td>
+<td>House, road, and trees match.</td>
+<td>Same identifiable features are present.</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Visual Consistency</td>
+<td>Consistent angles and perspectives.</td>
+<td>Consistent angles and perspectives.</td>
+<td>10</td>
+</tr>
+</tbody>
+</table>
+<p><em>💵 Estimated Cost:</em> $150-$300<br />
+<em>📈 Confidence:</em> 95%<br />
+<em>🧱 Total Score:</em> 96  </p>
+<p><em>📟 Verdict:</em><br />
+✅ Approved (≥80)</p>
+<p><em>📄 Summary:</em><br />
+The hedge trimming work has been completed successfully, with the hedge now appearing neat, evenly shaped, and well-maintained. The area is cleaner, and visibility has improved, enhancing safety. The photos are consistent in location and context, with no signs of tampering. The work aligns with the expected scope and is of high quality.</p>
+<hr />
+<pre><code class="language-json">{
+  &quot;score&quot;: 96,
+  &quot;verdict&quot;: &quot;✅ Approved&quot;,
+  &quot;confidence&quot;: 95,
+  &quot;repair_cost&quot;: &quot;$150-$300&quot;,
+  &quot;features&quot;: {
+    &quot;damage_condition&quot;: {&quot;before&quot;: &quot;Overgrown hedge with uneven growth.&quot;, &quot;after&quot;: &quot;Hedge is neatly trimmed and even.&quot;, &quot;score&quot;: 9},
+    &quot;cleanliness&quot;: {&quot;before&quot;: &quot;Grass and hedge appear untidy.&quot;, &quot;after&quot;: &quot;Area is clean and well-maintained.&quot;, &quot;score&quot;: 9},
+    &quot;safety_compliance&quot;: {&quot;before&quot;: &quot;Overgrowth could obstruct visibility.&quot;, &quot;after&quot;: &quot;Improved visibility and safety.&quot;, &quot;score&quot;: 9},
+    &quot;work_completion&quot;: {&quot;before&quot;: &quot;Hedge is untrimmed.&quot;, &quot;after&quot;: &quot;Hedge trimming is completed.&quot;, &quot;score&quot;: 10},
+    &quot;area_identification&quot;: {&quot;before&quot;: &quot;House, road, and trees match.&quot;, &quot;after&quot;: &quot;Same identifiable features are present.&quot;, &quot;score&quot;: 10},
+    &quot;visual_consistency&quot;: {&quot;before&quot;: &quot;Consistent angles and perspectives.&quot;, &quot;after&quot;: &quot;Consistent angles and perspectives.&quot;, &quot;score&quot;: 10}
+  }
+}
+</code></pre></div>
+      </div>
+      
+
+      <!-- Footer -->
+      <div class="footer">
+        <p>📊 AI Image Comparison System</p>
+        <p>
+          3 pairs • 3 approved • 95.3% average score
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
