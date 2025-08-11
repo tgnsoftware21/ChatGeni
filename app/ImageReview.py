@@ -677,19 +677,17 @@ def upload():
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 
-# PDF generation and other routes remain the same...
-import re
-import io
-import os
-from bs4 import BeautifulSoup
 from flask import send_file, jsonify
 from werkzeug.utils import secure_filename
+from bs4 import BeautifulSoup
 from xhtml2pdf import pisa
+import os
+import io
 
+OUTPUT_FOLDER = r"M:\Murugesan\Git\MyGit\ChatGeni\OutputFiles"  # example
 
-@generatecomparison.route("/pdf/<html_name>", methods=["GET"])
+@generatecomparison.route("/chatgenie/v1/pdf/<html_name>", methods=["GET"])
 def generate_pdf(html_name):
-    """Generate PDF from saved HTML report with preserved CSS and images."""
     try:
         safe_filename = secure_filename(html_name)
         if not safe_filename.endswith(".html"):
@@ -700,13 +698,13 @@ def generate_pdf(html_name):
         if not os.path.exists(file_path):
             return jsonify({"error": "Report not found"}), 404
 
-        # Read HTML
+        # Read HTML file
         with open(file_path, "r", encoding="utf-8") as f:
             html_content = f.read()
 
         soup = BeautifulSoup(html_content, "html.parser")
 
-        # Inline CSS
+        # Inline all CSS from <link> tags
         for link_tag in soup.find_all("link", {"rel": "stylesheet"}):
             css_path = link_tag.get("href")
             if css_path and not css_path.startswith("http"):
@@ -717,39 +715,32 @@ def generate_pdf(html_name):
                         style_tag.string = css_file.read()
                         link_tag.replace_with(style_tag)
 
-        # Fix <img> paths to absolute
+        # Fix image paths for PDF
         for img_tag in soup.find_all("img"):
             src = img_tag.get("src")
             if src and not src.startswith(("http://", "https://", "data:")):
-                abs_img_path = os.path.join(OUTPUT_FOLDER, src)
+                abs_img_path = os.path.abspath(os.path.join(OUTPUT_FOLDER, src))
                 if os.path.exists(abs_img_path):
-                    img_tag["src"] = abs_img_path
+                    img_tag["src"] = "file:///" + abs_img_path.replace("\\", "/")
 
+        # Final HTML
         html_content = str(soup)
 
-        # Convert to PDF
+        # Create PDF
         pdf_buffer = io.BytesIO()
-        pisa_result = pisa.CreatePDF(
-            src=html_content, dest=pdf_buffer, encoding="utf-8"
-        )
+        pisa_result = pisa.CreatePDF(html_content, dest=pdf_buffer, encoding="utf-8")
 
         if pisa_result.err:
-            logger.error(f"PDF generation failed")
             return jsonify({"error": "PDF generation failed"}), 500
 
         pdf_buffer.seek(0)
         pdf_filename = safe_filename.replace(".html", ".pdf")
 
-        return send_file(
-            pdf_buffer,
-            mimetype="application/pdf",
-            as_attachment=False,
-            download_name=pdf_filename,
-        )
+        return send_file(pdf_buffer, mimetype="application/pdf", download_name=pdf_filename)
 
     except Exception as e:
-        logger.error(f"PDF conversion error: {e}")
-        return jsonify({"error": "Could not generate PDF"}), 500
+        return jsonify({"error": str(e)}), 500
+
 
 
 @generatecomparison.route("/health", methods=["GET"])
