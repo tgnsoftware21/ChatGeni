@@ -319,6 +319,9 @@ def validate_image_metadata(image_data, is_after_image=False):
 def get_system_prompt():
     """Return the GPS + Date validation system prompt"""
     return """You are an expert AI assistant trained in real estate preservation, REO property management, and field service quality control. You validate work order photos by comparing "Before" and "After" images with GPS location and date verification.
+def get_system_prompt():
+    """Return the system prompt for image comparison with metadata validation"""
+    return """You are an expert AI assistant trained in real estate preservation, REO property management, and field service quality control. You validate work order photos by comparing "Before" and "After" images with strict metadata verification.
 
 Your goal is to verify:
 - Location consistency between images using GPS coordinates
@@ -353,6 +356,20 @@ Your goal is to verify:
 - Apply logical date timeline validation using work order dates
 - Focus on work site consistency and timeline compliance
 - No complex EXIF parsing required
+- **METADATA VALIDATION**: GPS coordinates and timestamp compliance
+
+⚙ Visual Analysis Process:
+- Analyze structural elements, lighting, angles, and backgrounds
+- Identify work type and transformation quality
+- Detect any signs of image manipulation or duplication
+- Evaluate safety and compliance standards
+- **VERIFY GPS COORDINATES**: Form lat/long must match image EXIF GPS data for both images
+- **VERIFY TIMESTAMPS**: ONLY the AFTER image datetime must be between issued_date and completed_date
+
+🚨 CRITICAL METADATA REQUIREMENTS:
+1. **GPS Validation**: The provided form coordinates (latitude/longitude) MUST match the EXIF GPS data extracted from BOTH images. Any mismatch indicates potential fraud or incorrect documentation.
+2. **Date Validation**: ONLY the AFTER image EXIF datetime_original MUST fall between the work order issued_date and completed_date. BEFORE images can be taken anytime before work starts.
+3. **Location Consistency**: Both before and after images must have matching GPS coordinates to confirm same work location.
 
 Follow this EXACT output format:
 
@@ -367,10 +384,25 @@ Follow this EXACT output format:
 | **GPS Validation** | **Form GPS coordinate consistency check** | **✅ / ❌** |
 | **Date Compliance** | **Work period timeline validation** | **✅ / ❌** |
 | Location Consistency | Same Form GPS coordinates for both images | ✅ / ❌ |
+| **GPS Coordinates** | **Form lat/long vs EXIF GPS match (both images)** | **✅ / ❌** |
+| **Date Compliance** | **AFTER image datetime within work period** | **✅ / ❌** |
+| Location Match | GPS/metadata alignment assessment | ✅ / ❌ |
+| Duplicate Check | Images identical or nearly same | ✅ / ❌ |
 | Tampering Check | Evidence of editing or manipulation | ✅ / ❌ |
 | Area Consistency | Same room/location verification | ✅ / ❌ |
 | Work Scope | Expected work type visible | ✅ / ❌ |
 | Photo Quality | Clarity, lighting, focus assessment | ✅ / ❌ |
+
+📍 **Metadata Verification Details**
+
+| Validation Type | Before Image | After Image | Status |
+|----------------|--------------|-------------|---------|
+| **Form GPS** | [lat, long from form] | [lat, long from form] | ✅ / ❌ |
+| **EXIF GPS** | [lat, long from EXIF] | [lat, long from EXIF] | ✅ / ❌ |
+| **GPS Match** | Form vs EXIF comparison | Form vs EXIF comparison | ✅ / ❌ |
+| **Image DateTime** | [EXIF datetime] | [EXIF datetime] | ✅ / ❌ |
+| **Work Period** | [Not validated - can be anytime] | [issued_date to completed_date] | ✅ / ❌ |
+| **Date Compliance** | Not required for BEFORE | Within work period? | ✅ / ❌ |
 
 🚰 Feature Comparison
 
@@ -395,6 +427,13 @@ Follow this EXACT output format:
 
 📄 Summary:
 [3-5 sentences describing changes, quality, concerns, GPS validation, and timeline compliance]
+- ✅ Approved (≥80 + metadata valid) / ⚠ Review (50-79 or metadata issues) / ❌ Rejected (<50 or metadata invalid)
+
+⚠️ **METADATA VIOLATIONS**: 
+[List any GPS coordinate mismatches for either image or AFTER image date compliance failures - these are CRITICAL ISSUES]
+
+📄 Summary:
+[3-5 sentences describing changes, quality, concerns, and metadata validation status. Note that BEFORE images don't require date validation.]
 
 **For backend processing, include JSON data:**
 
@@ -417,6 +456,13 @@ Follow this EXACT output format:
       "gps_analysis": "[Form GPS consistency explanation]",
       "timeline_analysis": "[Work period timeline explanation]"
     }
+  "metadata_valid": {
+    "gps_coordinates_match": true/false,
+    "after_date_compliance": true/false,
+    "before_gps_valid": true/false,
+    "after_gps_valid": true/false,
+    "before_date_valid": true,
+    "after_date_valid": true/false
   },
   "features": {
     "damage_condition": {"before": "", "after": "", "score": 0},
@@ -536,6 +582,39 @@ def create_ai_metadata_context(before_metadata, after_metadata):
     context += f"• Provide clear explanations for both validations\n"
     context += f"• Focus on practical compliance using available data\n"
     context += "=" * 80 + "\n"
+**IMPORTANT**: If GPS coordinates don't match between form data and EXIF data for either image, OR if the AFTER image timestamp falls outside the work order period, automatically reduce the final score by 30 points and mark as "Review" or "Rejected" status regardless of visual quality. BEFORE images do NOT require date validation."""
+
+
+def create_metadata_context(before_metadata, after_metadata):
+    """Create context string with metadata for AI analysis"""
+    context = "\n\n📍 METADATA CONTEXT FOR VALIDATION:\n"
+
+    # Before image metadata
+    context += f"BEFORE IMAGE METADATA:\n"
+    context += f"- Form GPS: {before_metadata.get('form_latitude', 'N/A')}, {before_metadata.get('form_longitude', 'N/A')}\n"
+    context += f"- EXIF GPS: {before_metadata.get('exif_latitude', 'N/A')}, {before_metadata.get('exif_longitude', 'N/A')}\n"
+    context += f"- EXIF DateTime: {before_metadata.get('exif_datetime', {}).get('formatted', 'N/A') if before_metadata.get('exif_datetime') else 'N/A'}\n"
+    context += (
+        f"- Date Validation: NOT REQUIRED (BEFORE images can be taken anytime)\n\n"
+    )
+
+    # After image metadata
+    context += f"AFTER IMAGE METADATA:\n"
+    context += f"- Form GPS: {after_metadata.get('form_latitude', 'N/A')}, {after_metadata.get('form_longitude', 'N/A')}\n"
+    context += f"- EXIF GPS: {after_metadata.get('exif_latitude', 'N/A')}, {after_metadata.get('exif_longitude', 'N/A')}\n"
+    context += f"- EXIF DateTime: {after_metadata.get('exif_datetime', {}).get('formatted', 'N/A') if after_metadata.get('exif_datetime') else 'N/A'}\n"
+    context += f"- Work Issued Date: {after_metadata.get('issued_date', 'N/A')}\n"
+    context += f"- Work Completed Date: {after_metadata.get('completed_date', 'N/A')}\n"
+    context += f"- Date Validation: REQUIRED (must be within work period)\n\n"
+
+    context += "⚠️ VALIDATION REQUIREMENTS:\n"
+    context += "1. GPS coordinates from form data MUST match EXIF GPS data for BOTH images (within ~50m tolerance)\n"
+    context += "2. ONLY the AFTER image datetime MUST be between issued_date and completed_date\n"
+    context += "3. BEFORE images do NOT require date validation (can be taken anytime before work)\n"
+    context += (
+        "4. Both images MUST have consistent GPS coordinates to confirm same location\n"
+    )
+    context += "5. Metadata violations result in automatic score reduction and review/rejection status\n"
 
     return context
 
@@ -552,6 +631,10 @@ def generate_comparison_with_ai_validation(
     before_path, after_path, before_metadata=None, after_metadata=None
 ):
     """Generate comparison analysis with AI-based GPS + Date validation"""
+def generate_comparison(
+    before_path, after_path, before_metadata=None, after_metadata=None
+):
+    """Generate comparison analysis between before and after images with metadata validation"""
     try:
         before_data = encode_image(before_path)
         after_data = encode_image(after_path)
@@ -562,6 +645,10 @@ def generate_comparison_with_ai_validation(
             metadata_context = create_ai_metadata_context(
                 before_metadata, after_metadata
             )
+        # Create metadata context for AI
+        metadata_context = ""
+        if before_metadata and after_metadata:
+            metadata_context = create_metadata_context(before_metadata, after_metadata)
 
         messages = [
             {"role": "system", "content": get_system_prompt()},
@@ -572,6 +659,7 @@ def generate_comparison_with_ai_validation(
                         "type": "text",
                         "text": f"Compare these before and after images. Analyze GPS coordinates and work timeline validation. "
                         f"Use logical reasoning to validate location consistency and timeline compliance.{metadata_context}",
+                        "text": f"Compare these before and after images. Provide detailed analysis with scoring and verdict. Pay special attention to metadata validation.{metadata_context}",
                     },
                     {
                         "type": "image_url",
@@ -641,6 +729,19 @@ def group_images_by_filename(images_data):
     after_images = []
 
     # Separate before and after images (case-insensitive)
+    Group images into sets based on file naming convention for your specific format:
+    before_<type>_image_<number>.<ext> and after_<type>_image_<number>.<ext>
+
+    Examples:
+    - before_exterior_image_0.jpg <-> after_exterior_image_1.jpg
+    - before_interior_image_2.jpg <-> after_interior_image_3.jpg
+    """
+    import re
+
+    before_images = []
+    after_images = []
+
+    # Separate before and after images
     for img_data in images_data:
         filename_lower = img_data["filename"].lower()
         if filename_lower.startswith("before_"):
@@ -653,6 +754,14 @@ def group_images_by_filename(images_data):
         filename_lower = filename.lower()
 
         # Remove 'before_' or 'after_' prefix (case-insensitive)
+        """
+        Extract the image type from filename
+        before_exterior_image_0.jpg -> 'exterior'
+        after_interior_image_1.jpg -> 'interior'
+        """
+        filename_lower = filename.lower()
+
+        # Remove before_/after_ prefix
         if filename_lower.startswith("before_"):
             base = filename_lower[len("before_") :]
         elif filename_lower.startswith("after_"):
@@ -680,12 +789,27 @@ def group_images_by_filename(images_data):
     # Group images by type
     before_by_type = {}
     after_by_type = {}
+        # Extract the type part (everything before '_image_')
+        # Pattern: <type>_image_<number>.<ext>
+        match = re.match(r"^(.+?)_image_\d+\.", base)
+        if match:
+            return match.group(1)  # Returns 'exterior', 'interior', etc.
+
+        # Fallback: remove _image_number pattern
+        type_part = re.sub(r"_image_\d+.*$", "", base)
+        return type_part if type_part else base
+
+    # Group by image types
+    before_by_type = defaultdict(list)
+    after_by_type = defaultdict(list)
 
     for img in before_images:
         img_type = extract_image_type(img["filename"])
         if img_type:
             before_by_type[img_type] = img
             logger.info(f"Found BEFORE image type '{img_type}': {img['filename']}")
+            before_by_type[img_type].append(img)
+            logger.info(f"Before image: {img['filename']} -> type: '{img_type}'")
 
     for img in after_images:
         img_type = extract_image_type(img["filename"])
@@ -731,6 +855,91 @@ def upload():
     """Handle image upload and comparison processing with AI-based GPS + Date validation"""
     try:
         uploaded_files = request.files.getlist("images")
+            after_by_type[img_type].append(img)
+            logger.info(f"After image: {img['filename']} -> type: '{img_type}'")
+
+    # Create comparison pairs
+    comparison_pairs = []
+
+    for img_type in before_by_type:
+        if img_type in after_by_type:
+            before_list = before_by_type[img_type]
+            after_list = after_by_type[img_type]
+
+            # Sort by the number in filename for consistent pairing
+            def get_image_number(img):
+                filename = img["filename"].lower()
+                match = re.search(r"image_(\d+)", filename)
+                return int(match.group(1)) if match else 0
+
+            before_list.sort(key=get_image_number)
+            after_list.sort(key=get_image_number)
+
+            # Pair them up (can handle multiple pairs of same type)
+            for i in range(min(len(before_list), len(after_list))):
+                before_img = before_list[i]
+                after_img = after_list[i]
+
+                comparison_pairs.append(
+                    {
+                        "before": before_img,
+                        "after": after_img,
+                        "set_id": f"{img_type}_{i+1}",
+                        "comparison_type": "type_based_matching",
+                    }
+                )
+
+                logger.info(
+                    f"Paired: {before_img['filename']} <-> {after_img['filename']} (type: {img_type})"
+                )
+
+    return comparison_pairs
+
+
+def validate_gps_coordinates(form_lat, form_lon, exif_lat, exif_lon, tolerance=0.001):
+    """Validate if GPS coordinates match within tolerance (approximately 100 meters)"""
+    try:
+        if not all([form_lat, form_lon, exif_lat, exif_lon]):
+            return False
+
+        form_lat = float(form_lat)
+        form_lon = float(form_lon)
+
+        lat_diff = abs(form_lat - exif_lat)
+        lon_diff = abs(form_lon - exif_lon)
+
+        return lat_diff <= tolerance and lon_diff <= tolerance
+    except (ValueError, TypeError):
+        return False
+
+
+def validate_date_range(image_datetime, issued_date, completed_date):
+    """Validate if image datetime falls within work order date range"""
+    try:
+        if not all([image_datetime, issued_date, completed_date]):
+            return False
+
+        # Parse datetime string if it's in ISO format
+        if isinstance(image_datetime, dict) and "formatted" in image_datetime:
+            image_dt = datetime.fromisoformat(image_datetime["formatted"])
+        else:
+            image_dt = datetime.fromisoformat(str(image_datetime))
+
+        issued_dt = datetime.fromisoformat(issued_date)
+        completed_dt = datetime.fromisoformat(completed_date)
+
+        return issued_dt <= image_dt <= completed_dt
+    except (ValueError, TypeError) as e:
+        logger.error(f"Date validation error: {e}")
+        return False
+
+
+@generatecomparison.route("/chatgenie/v1/upload", methods=["POST"])
+def upload():
+    """Handle image upload and comparison processing with enhanced metadata validation"""
+    try:
+        uploaded_files = request.files.getlist("images")
+
         image_types = request.form.getlist("imageTypes")  # BDATypeId values
         photo_types = request.form.getlist("photoTypes")  # PhotoTypeId values
         latitudes = request.form.getlist("latitudes")
@@ -747,6 +956,12 @@ def upload():
         logger.info(f"Issued Dates: {issued_dates}")
         logger.info(f"Completed Dates: {completed_dates}")
         logger.info(f"Uploaded Files: {[f.filename for f in uploaded_files]}")
+        print("Image Types:", image_types)
+        print("Photo Types:", photo_types)
+        print("Latitudes:", latitudes)
+        print("Longitudes:", longitudes)
+        print("Issued Dates:", issued_dates)
+        print("Completed Dates:", completed_dates)
 
         if not uploaded_files or all(f.filename == "" for f in uploaded_files):
             return jsonify({"error": "No files uploaded"}), 400
@@ -780,6 +995,13 @@ def upload():
             logger.info(f"Saved file {idx+1}/{len(uploaded_files)}: {file_path}")
 
             # Get form metadata for this file (with bounds checking)
+            # Extract metadata from image
+            image_metadata = get_image_metadata(file_path)
+            logger.info(
+                f"Extracted metadata for {filename}: GPS({image_metadata.get('latitude')}, {image_metadata.get('longitude')}), DateTime: {image_metadata.get('datetime_original', {}).get('formatted') if image_metadata.get('datetime_original') else 'None'}"
+            )
+
+            # Get metadata for this file
             bda_type_id = int(image_types[idx]) if idx < len(image_types) else 1
             photo_type_id = int(photo_types[idx]) if idx < len(photo_types) else 0
             latitude = latitudes[idx] if idx < len(latitudes) else None
@@ -794,6 +1016,27 @@ def upload():
             logger.info(f"  - Work Period: {issued_date} to {completed_date}")
 
             # Create simplified image data structure (GPS + Date only)
+
+            # Validate metadata immediately
+            gps_valid = validate_gps_coordinates(
+                latitude,
+                longitude,
+                image_metadata.get("latitude"),
+                image_metadata.get("longitude"),
+            )
+
+            # Only validate date range for AFTER images (work completion photos)
+            # BEFORE images can be taken anytime before work starts
+            is_after_image = filename.lower().startswith("after_")
+            date_valid = True  # Default to valid for BEFORE images
+
+            if is_after_image:
+                date_valid = validate_date_range(
+                    image_metadata.get("datetime_original"), issued_date, completed_date
+                )
+            else:
+                logger.info(f"Skipping date validation for BEFORE image: {filename}")
+
             image_data = {
                 "filename": filename,
                 "original_filename": filename,
@@ -804,10 +1047,43 @@ def upload():
                 "longitude": longitude,  # Form GPS only
                 "issued_date": issued_date,  # Work order dates
                 "completed_date": completed_date,  # Work order dates
+                "latitude": latitude,
+                "longitude": longitude,
+                "issued_date": issued_date,
+                "completed_date": completed_date,
                 "index": idx,
+                # Add extracted EXIF metadata
+                "exif_metadata": image_metadata,
+                "exif_latitude": image_metadata.get("latitude"),
+                "exif_longitude": image_metadata.get("longitude"),
+                "exif_datetime_original": image_metadata.get("datetime_original"),
+                "exif_datetime_created": image_metadata.get("datetime_created"),
+                "exif_camera_info": image_metadata.get("camera_info", {}),
+                "exif_gps_info": image_metadata.get("gps_info", {}),
+                # Add validation results
+                "gps_coordinates_valid": gps_valid,
+                "date_compliance_valid": date_valid,
+                "metadata_violations": [],
             }
 
             all_images_data.append(image_data)
+            # Log validation results
+            if not gps_valid:
+                violation = f"GPS coordinates mismatch for {filename}: Form({latitude}, {longitude}) vs EXIF({image_metadata.get('latitude')}, {image_metadata.get('longitude')})"
+                image_data["metadata_violations"].append(violation)
+                logger.warning(violation)
+
+            if not date_valid and is_after_image:
+                violation = f"Date compliance failure for AFTER image {filename}: Image datetime outside work period ({issued_date} to {completed_date})"
+                image_data["metadata_violations"].append(violation)
+                logger.warning(violation)
+            elif is_after_image and date_valid:
+                logger.info(f"✅ Date validation passed for AFTER image {filename}")
+            else:
+                logger.info(f"ℹ️ Date validation skipped for BEFORE image {filename}")
+
+            all_images_data.append(image_data)
+            logger.info(f"Added {filename} with metadata validation results")
 
         if len(all_images_data) < 2:
             return jsonify({"error": "Need at least 2 images for comparison"}), 400
@@ -817,6 +1093,12 @@ def upload():
 
         if not comparison_pairs:
             # Return error with debug info if no pairs found
+        # Use filename-based pairing instead of complex grouping
+        logger.info("Grouping images by filename convention (before_/after_)...")
+        comparison_pairs = group_images_by_filename(all_images_data)
+
+        if not comparison_pairs:
+            # Log debug information about why no pairs were found
             before_files = [
                 img["filename"]
                 for img in all_images_data
@@ -832,11 +1114,13 @@ def upload():
                 jsonify(
                     {
                         "error": "No valid comparison pairs found. Ensure images are named with 'before_' and 'after_' prefixes and have matching types.",
+                        "error": "No valid comparison pairs found. Check that images follow naming convention: before_<name>.<ext> and after_<name>.<ext>",
                         "debug": {
                             "total_images": len(all_images_data),
                             "before_files": before_files,
                             "after_files": after_files,
                             "naming_help": "Expected format: before_exterior_img.jpg, after_exterior_img.jpg",
+                            "naming_help": "Expected format: before_kitchen.jpg, after_kitchen.jpg",
                         },
                     }
                 ),
@@ -845,6 +1129,7 @@ def upload():
 
         logger.info(
             f"Found {len(comparison_pairs)} comparison pairs based on filename matching"
+            f"Found {len(comparison_pairs)} comparison pairs based on filenames"
         )
 
         results = []
@@ -867,6 +1152,12 @@ def upload():
             try:
                 # Prepare GPS + Date metadata for AI analysis
                 before_metadata = {
+                # Prepare metadata for AI analysis
+                before_metadata = {
+                    "exif_latitude": before_img.get("exif_latitude"),
+                    "exif_longitude": before_img.get("exif_longitude"),
+                    "exif_datetime": before_img.get("exif_datetime_original"),
+                    "exif_camera": before_img.get("exif_camera_info"),
                     "form_latitude": before_img.get("latitude"),
                     "form_longitude": before_img.get("longitude"),
                     "issued_date": before_img.get("issued_date"),
@@ -874,6 +1165,10 @@ def upload():
                 }
 
                 after_metadata = {
+                    "exif_latitude": after_img.get("exif_latitude"),
+                    "exif_longitude": after_img.get("exif_longitude"),
+                    "exif_datetime": after_img.get("exif_datetime_original"),
+                    "exif_camera": after_img.get("exif_camera_info"),
                     "form_latitude": after_img.get("latitude"),
                     "form_longitude": after_img.get("longitude"),
                     "issued_date": after_img.get("issued_date"),
@@ -882,6 +1177,8 @@ def upload():
 
                 # Generate comparison analysis with AI GPS + Date validation
                 comparison_result = generate_comparison_with_ai_validation(
+                # Generate comparison analysis with metadata
+                comparison_result = generate_comparison(
                     before_img["path"],
                     after_img["path"],
                     before_metadata,
@@ -948,6 +1245,29 @@ def upload():
                 if score >= 80 and metadata_valid:
                     status = "approved"
                 elif score >= 50 or not metadata_valid:
+                # Apply metadata validation penalties
+                metadata_violations = before_img.get(
+                    "metadata_violations", []
+                ) + after_img.get("metadata_violations", [])
+                if metadata_violations:
+                    logger.warning(
+                        f"Metadata violations detected for pair {pair_index + 1}: {metadata_violations}"
+                    )
+                    score = max(
+                        0, score - 30
+                    )  # Reduce score by 30 points for metadata violations
+
+                # Convert markdown to HTML
+                result_html = markdown.markdown(
+                    comparison_result, extensions=["fenced_code", "tables", "nl2br"]
+                )
+
+                # Determine status based on score and metadata validation
+                has_metadata_violations = bool(metadata_violations)
+
+                if score >= 80 and not has_metadata_violations:
+                    status = "approved"
+                elif score >= 50 or has_metadata_violations:
                     status = "pending"
                 else:
                     status = "rejected"
@@ -961,6 +1281,9 @@ def upload():
                 logger.info(f"  - Timeline Valid: {timeline_valid}")
                 logger.info(f"  - Location Consistent: {location_consistent}")
                 logger.info(f"  - Overall Valid: {metadata_valid}")
+                logger.info(
+                    f"  Status: {status} (score: {score}, metadata violations: {has_metadata_violations})"
+                )
 
                 # Convert images to base64 data URLs
                 before_base64 = encode_image_to_base64(before_img["path"])
@@ -989,6 +1312,23 @@ def upload():
                     "date_valid": date_valid,
                     "timeline_valid": timeline_valid,
                     "location_consistent": location_consistent,
+                    "metadata_violations": metadata_violations,
+                    "metadata_validation_summary": {
+                        "before_gps_valid": before_img.get(
+                            "gps_coordinates_valid", False
+                        ),
+                        "after_gps_valid": after_img.get(
+                            "gps_coordinates_valid", False
+                        ),
+                        "before_date_valid": before_img.get(
+                            "date_compliance_valid", False
+                        ),
+                        "after_date_valid": after_img.get(
+                            "date_compliance_valid", False
+                        ),
+                        "overall_valid": not has_metadata_violations,
+                    },
+                    # Add EXIF metadata for verification
                     "before_metadata": before_metadata,
                     "after_metadata": after_metadata,
                 }
@@ -1008,6 +1348,8 @@ def upload():
                         "before_filename": before_img["original_filename"],
                         "after_filename": after_img["original_filename"],
                         "metadata_valid": metadata_valid,
+                        "metadata_violations": metadata_violations,
+                        "metadata_valid": not has_metadata_violations,
                     }
                 )
 
@@ -1028,6 +1370,7 @@ def upload():
         average_score = total_score / len(results) if results else 0
         approved_count = sum(1 for r in results if r["status"] == "approved")
         metadata_valid_count = sum(1 for r in results if r["metadata_valid"])
+        metadata_violations_count = sum(1 for r in results if r["metadata_violations"])
 
         # Count unique sets
         unique_sets = len(comparison_pairs)
@@ -1048,6 +1391,7 @@ def upload():
                     average_score=round(average_score, 1),
                     approved_count=approved_count,
                     metadata_valid_count=metadata_valid_count,
+                    metadata_violations_count=metadata_violations_count,
                     timestamp=timestamp,
                     upload_count=len(uploaded_files),
                     unique_sets=unique_sets,
@@ -1059,6 +1403,7 @@ def upload():
         response_data = {
             "success": True,
             "message": f"Successfully processed {len(results)} comparison pair{'s' if len(results) > 1 else ''} with AI-powered GPS + Date validation",
+            "message": f"Successfully processed {len(results)} comparison pair{'s' if len(results) > 1 else ''} from filename-based matching with metadata validation",
             "results": results,
             "total_pairs": len(results),
             "unique_sets": unique_sets,
@@ -1068,6 +1413,7 @@ def upload():
             "approved_count": approved_count,
             "metadata_valid_count": metadata_valid_count,
             "validation_method": "ai_gps_date_validation",
+            "metadata_violations_count": metadata_violations_count,
             "image_statistics": {
                 "total_uploaded": len(uploaded_files),
                 "total_processed": len(all_images_data),
@@ -1077,6 +1423,16 @@ def upload():
                     if results
                     else "0%"
                 ),
+                    f"{((len(results) - metadata_violations_count) / len(results) * 100):.1f}%"
+                    if results
+                    else "0%"
+                ),
+            },
+            "metadata_validation_summary": {
+                "total_violations": metadata_violations_count,
+                "gps_validation_enabled": True,
+                "date_validation_enabled": True,
+                "tolerance_meters": 100,  # Approximate GPS tolerance
             },
         }
 
@@ -1122,6 +1478,8 @@ async def html_string_to_pdf_bytes(html_content):
         )
         await browser.close()
         return pdf_bytes
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_FOLDER = os.path.join(BASE_DIR, "OutputFiles")
 
 
 @generatecomparison.route("/chatgenie/v1/pdf/<html_name>", methods=["GET"])
@@ -1173,6 +1531,11 @@ def generate_pdf(html_name):
             mimetype="application/pdf",
             download_name=pdf_filename,
             as_attachment=True,
+        pdf_buffer.seek(0)
+        pdf_filename = safe_filename.replace(".html", ".pdf")
+
+        return send_file(
+            pdf_buffer, mimetype="application/pdf", download_name=pdf_filename
         )
 
     except Exception as e:
@@ -1246,6 +1609,60 @@ def get_metadata_endpoint(filename):
 # =============================================================================
 # ERROR HANDLERS
 # =============================================================================
+=======
+        metadata = get_image_metadata(file_path)
+        return jsonify(
+            {
+                "filename": safe_filename,
+                "metadata": metadata,
+                "file_size": os.path.getsize(file_path),
+                "file_path": file_path,
+            }
+        )
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@generatecomparison.route("/chatgenie/v1/validate-metadata", methods=["POST"])
+def validate_metadata_endpoint():
+    """API endpoint to validate metadata compliance"""
+    try:
+        data = request.get_json()
+
+        form_lat = data.get("form_latitude")
+        form_lon = data.get("form_longitude")
+        exif_lat = data.get("exif_latitude")
+        exif_lon = data.get("exif_longitude")
+        image_datetime = data.get("image_datetime")
+        issued_date = data.get("issued_date")
+        completed_date = data.get("completed_date")
+
+        gps_valid = validate_gps_coordinates(form_lat, form_lon, exif_lat, exif_lon)
+        date_valid = validate_date_range(image_datetime, issued_date, completed_date)
+
+        return jsonify(
+            {
+                "gps_coordinates_valid": gps_valid,
+                "date_compliance_valid": date_valid,
+                "overall_valid": gps_valid and date_valid,
+                "validation_details": {
+                    "gps_check": {
+                        "form_coordinates": [form_lat, form_lon],
+                        "exif_coordinates": [exif_lat, exif_lon],
+                        "tolerance_degrees": 0.001,
+                        "tolerance_meters_approx": 100,
+                    },
+                    "date_check": {
+                        "image_datetime": image_datetime,
+                        "work_period": [issued_date, completed_date],
+                    },
+                },
+            }
+        )
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @generatecomparison.errorhandler(413)
