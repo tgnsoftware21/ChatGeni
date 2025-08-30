@@ -6,8 +6,13 @@
       TactGen Solutions - GenPi Smart Photo Review Report - {{ total_pairs }}
       Pairs
     </title>
+    <title>
+      TactGen Solutions - GenPi Smart Photo Review Report - {{ total_pairs }}
+      Pairs
+    </title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
+      /* RESET */
       /* RESET */
       * {
         box-sizing: border-box;
@@ -25,7 +30,13 @@
       body {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         line-height: 1.4;
+        line-height: 1.4;
         color: #333;
+        background: #fefefe;
+        position: relative;
+        min-height: 100vh;
+        margin-bottom: 1px;
+        font-size: 15px;
         background: #fefefe;
         position: relative;
         min-height: 100vh;
@@ -63,7 +74,40 @@
       }
 
       /* HEADER - Teal Color */
+      /* WATERMARK */
+      .watermark {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 0.3;
+        z-index: 999;
+        pointer-events: none;
+        text-align: center;
+      }
+
+      .watermark img {
+        width: 90%;
+        max-width: 600px;
+        height: auto;
+        opacity: 0.3;
+        filter: grayscale(100%);
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.98);
+        position: relative;
+        padding-bottom: 40px;
+        z-index: 1;
+      }
+
+      /* HEADER - Teal Color */
       .report-header {
+        background: #17a2b8;
+        color: #fff;
+        padding: 20px 28px;
         background: #17a2b8;
         color: #fff;
         padding: 20px 28px;
@@ -73,20 +117,27 @@
         page-break-inside: avoid;
         margin: 0;
         box-shadow: 0 4px 20px rgba(23, 162, 184, 0.3);
+        page-break-inside: avoid;
+        margin: 0;
+        box-shadow: 0 4px 20px rgba(23, 162, 184, 0.3);
       }
 
       .header-left {
         display: flex;
         align-items: center;
         gap: 12px;
+        gap: 12px;
       }
 
       .company-logo {
         height: 50px;
         border-radius: 6px;
+        height: 50px;
+        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
+        overflow: hidden;
         overflow: hidden;
       }
 
@@ -95,9 +146,13 @@
         max-height: 100%;
         object-fit: contain;
         /* background-color: rgba(255, 255, 255, 0.5); */
+        /* background-color: rgba(255, 255, 255, 0.5); */
       }
 
       .company-info h1 {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin: 0;
         font-size: 1.3rem;
         font-weight: 600;
         margin: 0;
@@ -357,12 +412,22 @@
         letter-spacing: 0.4px;
         background: #17a2b8;
         color: white;
+        letter-spacing: 0.4px;
+        background: #17a2b8;
+        color: white;
       }
 
+      /* IMAGE COMPARISON */
       /* IMAGE COMPARISON */
       .image-comparison {
         display: grid;
         grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin: 0;
+        background: transparent;
+        padding: 0;
+        page-break-inside: avoid;
+        break-inside: avoid;
         gap: 15px;
         margin: 0;
         background: transparent;
@@ -375,8 +440,16 @@
         display: flex;
         flex-direction: column;
         align-items: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
 
+      .image-box {
+        width: 100%;
+        max-width: 280px;
+        aspect-ratio: 4/3;
+        overflow: hidden;
       .image-box {
         width: 100%;
         max-width: 280px;
@@ -394,8 +467,30 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        background: #f1f3f6;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
+      .image-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .label-below {
+        margin-top: 10px;
+        padding: 6px 12px;
+        border-radius: 4px;
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.75rem;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+        text-align: center;
       .label-below {
         margin-top: 10px;
         padding: 6px 12px;
@@ -429,6 +524,24 @@
         border-radius: 0;
       }
 
+      /* ANALYSIS SECTIONS */
+      .analysis-section,
+      .validation-section,
+      .feature-section {
+        background: rgba(248, 249, 250, 0.95);
+        padding: 10px;
+        margin: 0;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        border-radius: 0;
+      }
+
+      .validation-section {
+        background: linear-gradient(135deg, #f0f8ff, #e9f2ff);
+      }
+
+      .feature-section {
+        background: linear-gradient(135deg, #fdf6e3, #fff9e6);
       .validation-section {
         background: linear-gradient(135deg, #f0f8ff, #e9f2ff);
       }
@@ -446,8 +559,21 @@
         border-bottom: 2px solid #17a2b8;
         font-weight: 600;
         font-size: 1.05rem;
+      .analysis-section h3,
+      .validation-section h3,
+      .feature-section h3 {
+        color: #17a2b8;
+        margin-bottom: 8px;
+        padding-bottom: 4px;
+        border-bottom: 2px solid #17a2b8;
+        font-weight: 600;
+        font-size: 1.05rem;
       }
 
+      /* Table Styles */
+      .analysis-section table,
+      .validation-section table,
+      .feature-section table {
       /* Table Styles */
       .analysis-section table,
       .validation-section table,
@@ -457,7 +583,11 @@
         margin-top: 10px;
         background: rgba(255, 255, 255, 0.95);
         border-radius: 8px;
+        margin-top: 10px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 8px;
         overflow: hidden;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
       }
 
@@ -472,8 +602,24 @@
         text-align: center;
         word-wrap: break-word;
         font-size: 0.8rem;
+      .analysis-section th,
+      .analysis-section td,
+      .validation-section th,
+      .validation-section td,
+      .feature-section th,
+      .feature-section td {
+        padding: 8px;
+        border-bottom: 1px solid #e3e7ee;
+        text-align: center;
+        word-wrap: break-word;
+        font-size: 0.8rem;
       }
 
+      .analysis-section th,
+      .validation-section th,
+      .feature-section th {
+        background: #17a2b8;
+        color: #fff;
       .analysis-section th,
       .validation-section th,
       .feature-section th {
@@ -525,10 +671,56 @@
         height: 20px;
         background: #eeeeee;
         border: 1px solid #ccc;
+        font-size: 0.8rem;
+      }
+
+      /* Progress Section */
+      .progress-section {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 10px;
+        border-radius: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        margin: 0;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      .progress-item {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .progress-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .progress-label {
+        font-weight: 600;
+        color: #2c3e50;
+        font-size: 0.9rem;
+        min-width: 100px;
+        flex-shrink: 0;
+      }
+
+      .progress-bar-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .progress-bar {
+        flex: 1;
+        height: 20px;
+        background: #eeeeee;
+        border: 1px solid #ccc;
         border-radius: 4px;
         overflow: hidden;
       }
 
+      .progress-fill {
       .progress-fill {
         height: 100%;
         background: linear-gradient(180deg, #17a2b8, #17a2b8);
@@ -816,6 +1008,8 @@
 
         .image-comparison {
           grid-template-columns: 1fr;
+        .image-comparison {
+          grid-template-columns: 1fr;
         }
 
         .summary-stats {
@@ -879,7 +1073,11 @@
         html,
         body {
           margin: 0;
+          margin: 0;
           padding: 0;
+          background: #fff;
+          height: auto;
+          font-size: 13px;
           background: #fff;
           height: auto;
           font-size: 13px;
@@ -887,13 +1085,23 @@
 
         .container {
           padding-bottom: 0;
+          padding-bottom: 0;
         }
 
         .footer {
           position: relative;
           margin: 0px;
           margin-bottom: 4px;
+        .footer {
+          position: relative;
+          margin: 0px;
+          margin-bottom: 4px;
           page-break-inside: avoid;
+        }
+
+        .watermark {
+          opacity: 0.3;
+          z-index: 999;
         }
 
         .watermark {
@@ -935,6 +1143,13 @@
       br {
         display: none !important;
       }
+
+      hr {
+        display: none !important;
+      }
+      br {
+        display: none !important;
+      }
     </style>
   </head>
   <body>
@@ -944,7 +1159,14 @@
       {% endif %}
     </div>
 
+    <div class="watermark">
+      {% if logo_base64 %}
+      <img src="{{ logo_base64 }}" alt="TG Logo Watermark" />
+      {% endif %}
+    </div>
+
     <div class="container">
+      <!-- HEADER -->
       <!-- HEADER -->
       <div class="report-header">
         <div class="header-left">
@@ -956,8 +1178,17 @@
               onerror="this.style.display='none'"
             />
             {% endif %}
+            {% if genpi_logo_base64 %}
+            <img
+              src="{{ genpi_logo_base64 }}"
+              alt="Genpi Logo"
+              onerror="this.style.display='none'"
+            />
+            {% endif %}
           </div>
           <div class="company-info">
+            <h1>TactGen Solutions | GenPi Smart Photo Review</h1>
+            <div class="tagline">AI-Powered Work Order Photo QC Report</div>
             <h1>TactGen Solutions | GenPi Smart Photo Review</h1>
             <div class="tagline">AI-Powered Work Order Photo QC Report</div>
           </div>
@@ -965,12 +1196,16 @@
       </div>
 
       <!-- SUMMARY STATS -->
+      <!-- SUMMARY STATS -->
       <div class="summary-stats">
         <div class="stat-card total">
           <div class="stat-number">{{ total_pairs|default(0) }}</div>
           <div class="stat-label">Total Pairs</div>
+          <div class="stat-number">{{ total_pairs|default(0) }}</div>
+          <div class="stat-label">Total Pairs</div>
         </div>
         <div class="stat-card approved">
+          <div class="stat-number">{{ approved_count|default(0) }}</div>
           <div class="stat-number">{{ approved_count|default(0) }}</div>
           <div class="stat-label">Approved</div>
         </div>
@@ -1072,11 +1307,17 @@
       {% for comparison in comparisons %}
       <!-- HEADER CONTAINER: Title and Status -->
       <div class="comparison-header-container">
+      <!-- HEADER CONTAINER: Title and Status -->
+      <div class="comparison-header-container">
         <div class="comparison-header-custom">
           <div class="comparison-title">
             <span></span>
             <h3>Before vs After Review - Pair {{ loop.index }}</h3>
+            <span></span>
+            <h3>Before vs After Review - Pair {{ loop.index }}</h3>
           </div>
+          <div>
+            {% if comparison.status == 'approved' and approved_base64 %}
           <div>
             {% if comparison.status == 'approved' and approved_base64 %}
             <img
@@ -1085,11 +1326,13 @@
               class="status-badge-img"
             />
             {% elif comparison.status == 'pending' and pending_base64 %}
+            {% elif comparison.status == 'pending' and pending_base64 %}
             <img
               src="{{ pending_base64 }}"
               alt="Pending"
               class="status-badge-img"
             />
+            {% elif rejected_base64 %}
             {% elif rejected_base64 %}
             <img
               src="{{ rejected_base64 }}"
@@ -1100,11 +1343,20 @@
             <div class="status-badge-text">
               {{ comparison.status|default('Unknown')|title }}
             </div>
+            {% else %}
+            <div class="status-badge-text">
+              {{ comparison.status|default('Unknown')|title }}
+            </div>
             {% endif %}
           </div>
         </div>
       </div>
+          </div>
+        </div>
+      </div>
 
+      <!-- IMAGE COMPARISON CONTAINER: Before and After Images -->
+      <div class="image-comparison-container">
       <!-- IMAGE COMPARISON CONTAINER: Before and After Images -->
       <div class="image-comparison-container">
         <div class="image-comparison">
@@ -1117,8 +1369,27 @@
               {% endif %}
             </div>
             <div class="label-below before-label">BEFORE Preview</div>
+            <div class="image-box">
+              {% if comparison.before_path %}
+              <img src="{{ comparison.before_path }}" alt="Before Image" />
+              {% else %}
+              <div class="no-image-placeholder">Before Image Not Available</div>
+              {% endif %}
+            </div>
+            <div class="label-below before-label">BEFORE Preview</div>
           </div>
           <div class="image-container">
+            <div class="image-box">
+              {% if comparison.after_path %}
+              <img src="{{ comparison.after_path }}" alt="After Image" />
+              {% else %}
+              <div class="no-image-placeholder">After Image Not Available</div>
+              {% endif %}
+            </div>
+            <div class="label-below after-label">AFTER Preview</div>
+          </div>
+        </div>
+      </div>
             <div class="image-box">
               {% if comparison.after_path %}
               <img src="{{ comparison.after_path }}" alt="After Image" />
@@ -1286,8 +1557,61 @@
         <span>+91-954-954-7433</span>
         <span>admin@tactgen.com</span>
         <span>www.tactgen.com</span>
+    </div>
+
+    <div class="page-footer">
+      <div class="top-line">
+        Confidential & Generated by GenPi – Smart Photo Review (Powered by
+        TactGen AI)
+      </div>
+      <div class="bottom-line">
+        <span>© 2025 TactGen Solutions</span>
+        <span>+91-954-954-7433</span>
+        <span>admin@tactgen.com</span>
+        <span>www.tactgen.com</span>
       </div>
     </div>
+
+    <script>
+      // Remove "For backend processing" text on page load
+      document.addEventListener("DOMContentLoaded", function () {
+        const walker = document.createTreeWalker(
+          document.body,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+
+        const nodesToRemove = [];
+        let node;
+
+        while ((node = walker.nextNode())) {
+          if (
+            node.textContent.includes(
+              "For backend processing, include JSON data:"
+            )
+          ) {
+            nodesToRemove.push(node.parentElement);
+          }
+        }
+
+        nodesToRemove.forEach((element) => {
+          if (element) element.remove();
+        });
+
+        const qcSections = document.querySelectorAll(".qc-status-section");
+        qcSections.forEach((section) => {
+          let nextElement = section.nextElementSibling;
+          if (
+            nextElement &&
+            (nextElement.tagName === "HR" ||
+              nextElement.textContent.trim() === "")
+          ) {
+            nextElement.remove();
+          }
+        });
+      });
+    </script>
 
     <script>
       // Remove "For backend processing" text on page load
