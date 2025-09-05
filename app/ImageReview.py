@@ -26,7 +26,6 @@ import io
 import asyncio
 from playwright.async_api import async_playwright
 import math
-import math
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -42,19 +41,6 @@ class Config:
         self.API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
         self.AZURE_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 
-# FIXED: Better configuration management with validation
-class Config:
-    def __init__(self):
-        self.AZURE_DEPLOYMENT_NAME = os.getenv("AZURE_DEPLOYMENT_NAME", "gpt-4o")
-        self.API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
-        self.AZURE_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
-
-        # FIXED: Validate required environment variables at startup
-        if not self.API_KEY or not self.AZURE_ENDPOINT:
-            logger.error(
-                "Missing required environment variables: AZURE_OPENAI_API_KEY or AZURE_OPENAI_ENDPOINT"
-            )
-            raise ValueError("Missing Azure OpenAI configuration")
         # FIXED: Validate required environment variables at startup
         if not self.API_KEY or not self.AZURE_ENDPOINT:
             logger.error(
@@ -62,31 +48,6 @@ class Config:
             )
             raise ValueError("Missing Azure OpenAI configuration")
 
-    # FIXED: Use absolute paths to avoid path issues
-    @property
-    def UPLOAD_FOLDER(self):
-        return os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "static", "uploads")
-        )
-
-    @property
-    def OUTPUT_FOLDER(self):
-        return os.path.abspath(os.path.join(os.path.dirname(__file__), "OutputFiles"))
-
-
-# Initialize configuration
-config = Config()
-
-# Initialize OpenAI client with proper error handling
-try:
-    client = openai.AzureOpenAI(
-        api_key=config.API_KEY,
-        api_version="2024-02-15-preview",
-        azure_endpoint=config.AZURE_ENDPOINT,
-    )
-except Exception as e:
-    logger.error(f"Failed to initialize OpenAI client: {e}")
-    raise
     # FIXED: Use absolute paths to avoid path issues
     @property
     def UPLOAD_FOLDER(self):
@@ -154,54 +115,8 @@ def allowed_file(filename, file_content=None):
 
 def process_filename(filename, file_content=None):
     """FIXED: Better filename processing with type detection"""
-# FIXED: Better file validation with magic number detection
-def get_file_type(file_content):
-    """Detect file type using magic numbers for security"""
-    magic_numbers = {
-        b"\xff\xd8\xff": "jpeg",
-        b"\x89PNG\r\n\x1a\n": "png",
-        b"GIF87a": "gif",
-        b"GIF89a": "gif",
-        b"BM": "bmp",
-        b"RIFF": "webp",
-    }
-
-    for magic, file_type in magic_numbers.items():
-        if file_content.startswith(magic):
-            return file_type
-    return None
-
-
-def allowed_file(filename, file_content=None):
-    """FIXED: Enhanced file validation with magic number checking"""
-    if "." in filename:
-        extension = filename.rsplit(".", 1)[1].lower()
-        if extension not in ALLOWED_EXTENSIONS:
-            return False
-
-    if file_content:
-        detected_type = get_file_type(file_content)
-        if not detected_type:
-            logger.warning(f"Could not detect valid image type for {filename}")
-            return False
-
-    return True
-
-
-def process_filename(filename, file_content=None):
-    """FIXED: Better filename processing with type detection"""
     secure_name = secure_filename(filename)
 
-    if "." not in secure_name and file_content:
-        detected_type = get_file_type(file_content)
-        if detected_type:
-            secure_name += f".{detected_type}"
-        else:
-            secure_name += ".jpg"
-            logger.warning(
-                f"Could not detect file type for {filename}, defaulting to .jpg"
-            )
-    elif "." not in secure_name:
     if "." not in secure_name and file_content:
         detected_type = get_file_type(file_content)
         if detected_type:
@@ -230,28 +145,11 @@ def validate_file_size(file_stream):
     except Exception as e:
         logger.error(f"Error validating file size: {e}")
         return False
-    """Validate file size with better error handling"""
-    try:
-        if hasattr(file_stream, "seek") and hasattr(file_stream, "tell"):
-            file_stream.seek(0, os.SEEK_END)
-            size = file_stream.tell()
-            file_stream.seek(0)
-        else:
-            size = len(file_stream)
-        return size <= MAX_FILE_SIZE
-    except Exception as e:
-        logger.error(f"Error validating file size: {e}")
-        return False
 
 
 def encode_image_to_base64(file_path):
     """FIXED: Better error handling for image encoding"""
-    """FIXED: Better error handling for image encoding"""
     try:
-        if not os.path.exists(file_path):
-            logger.error(f"File does not exist: {file_path}")
-            return None
-
         if not os.path.exists(file_path):
             logger.error(f"File does not exist: {file_path}")
             return None
@@ -273,12 +171,9 @@ def encode_image_to_base64(file_path):
 def load_base64_images():
     """FIXED: Better path handling and error checking"""
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    """FIXED: Better path handling and error checking"""
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     images = {}
     image_files = {
         "logo": os.path.join(BASE_DIR, "static", "img", "logo.png"),
-        "genpi_logo": os.path.join(BASE_DIR, "static", "img", "GenpiLogo.png"),
         "genpi_logo": os.path.join(BASE_DIR, "static", "img", "GenpiLogo.png"),
         "approved": os.path.join(BASE_DIR, "static", "img", "Approved.png"),
         "pending": os.path.join(BASE_DIR, "static", "img", "Pending.png"),
@@ -286,18 +181,6 @@ def load_base64_images():
     }
 
     for name, path in image_files.items():
-        try:
-            if os.path.exists(path):
-                with open(path, "rb") as img_file:
-                    base64_data = base64.b64encode(img_file.read()).decode("utf-8")
-                    ext = os.path.splitext(path)[1][1:]
-                    images[f"{name}_base64"] = f"data:image/{ext};base64,{base64_data}"
-            else:
-                logger.warning(f"Image not found: {path}")
-                images[f"{name}_base64"] = None
-        except Exception as e:
-            logger.error(f"Error loading image {path}: {e}")
-            images[f"{name}_base64"] = None
         try:
             if os.path.exists(path):
                 with open(path, "rb") as img_file:
@@ -320,11 +203,7 @@ BASE64_IMAGES = load_base64_images()
 
 def encode_image(image_path):
     """FIXED: Better error handling"""
-    """FIXED: Better error handling"""
     try:
-        if not os.path.exists(image_path):
-            raise FileNotFoundError(f"Image file not found: {image_path}")
-
         if not os.path.exists(image_path):
             raise FileNotFoundError(f"Image file not found: {image_path}")
 
@@ -337,7 +216,6 @@ def encode_image(image_path):
 
 def get_system_prompt():
     """Returns the GPS + Date validation system prompt with ENFORCED section separation"""
-    """Returns the GPS + Date validation system prompt with ENFORCED section separation"""
     return """You are an expert AI assistant trained in real estate preservation, REO property management, and field service quality control. You validate work order photos by comparing "Before" and "After" images with GPS location and date verification.
 
 Your goal is to verify:
@@ -349,7 +227,6 @@ Your goal is to verify:
 - **GPS + DATE VALIDATION**: Form GPS coordinates and work period verification
 
 🚨 CRITICAL VALIDATION TASKS:
-1. **GPS Coordinate Verification**:
 1. **GPS Coordinate Verification**:
    - Use Form GPS coordinates as the authoritative location data
    - Verify both BEFORE and AFTER images have the same Form GPS coordinates
@@ -376,20 +253,15 @@ Your goal is to verify:
 - No complex EXIF parsing required
 
 **CRITICAL: Follow this EXACT output format with SEPARATE sections:**
-**CRITICAL: Follow this EXACT output format with SEPARATE sections:**
 
 ---
 
 TITLE: [Brief description of work performed]
-TITLE: [Brief description of work performed]
 
-AI VALIDATION RESULTS
 AI VALIDATION RESULTS
 
 | Factor | Analysis | Result |
 |--------|----------|--------|
-| GPS Validation | Form GPS coordinate consistency check | ✅ / ❌ |
-| Date Compliance | Work period timeline validation | ✅ / ❌ |
 | GPS Validation | Form GPS coordinate consistency check | ✅ / ❌ |
 | Date Compliance | Work period timeline validation | ✅ / ❌ |
 | Location Consistency | Same Form GPS coordinates for both images | ✅ / ❌ |
@@ -398,7 +270,6 @@ AI VALIDATION RESULTS
 | Work Scope | Expected work type visible | ✅ / ❌ |
 | Photo Quality | Clarity, lighting, focus assessment | ✅ / ❌ |
 
-AI FEATURE SCORING
 AI FEATURE SCORING
 
 | Feature | Before | After | Score (1-10) |
@@ -452,7 +323,6 @@ Approved (≥80 + GPS valid + date compliant) / ⚠ Review (50-79 or validation 
 ```json
 {
   "score": [0-100],
-  "qc_status": "[status with emoji]",
   "qc_status": "[status with emoji]",
   "confidence": [0-100],
   "repair_cost": "[range]",
@@ -720,34 +590,12 @@ def create_ai_metadata_context(
         )
 
     # GPS COORDINATES WITH PROPERTY CONTEXT
-    context += "🤖 INSTRUCTIONS: Validate GPS coordinates, work timeline, and type classifications using complete work order context.\n\n"
-
-    # WORK ORDER INFORMATION SECTION
-    if work_order_context:
-        context += f"📋 WORK ORDER DETAILS:\n"
-        context += (
-            f"• Work Order #: {work_order_context.get('workOrderNumber', 'N/A')}\n"
-        )
-        context += (
-            f"• Property Address: {work_order_context.get('fullAddress', 'N/A')}\n"
-        )
-        context += f"• Vendor: {work_order_context.get('vendorName', 'N/A')}\n"
-        context += f"• Task: {work_order_context.get('workTaskName', 'N/A')}\n"
-        context += f"• Scope: {work_order_context.get('scopeOfWork', 'N/A')}\n"
-        context += (
-            f"• Status: {work_order_context.get('workOrderStatusName', 'N/A')}\n\n"
-        )
-
-    # GPS COORDINATES WITH PROPERTY CONTEXT
     form_lat_before = before_metadata.get("form_latitude", "N/A")
     form_lon_before = before_metadata.get("form_longitude", "N/A")
     form_lat_after = after_metadata.get("form_latitude", "N/A")
     form_lon_after = after_metadata.get("form_longitude", "N/A")
 
     context += f"🗺️ GPS COORDINATE VALIDATION:\n"
-    context += f"• Property Location: {work_order_context.get('fullAddress', 'N/A') if work_order_context else 'N/A'}\n"
-    context += f"• Before Image GPS: {form_lat_before}, {form_lon_before}\n"
-    context += f"• After Image GPS: {form_lat_after}, {form_lon_after}\n"
     context += f"• Property Location: {work_order_context.get('fullAddress', 'N/A') if work_order_context else 'N/A'}\n"
     context += f"• Before Image GPS: {form_lat_before}, {form_lon_before}\n"
     context += f"• After Image GPS: {form_lat_after}, {form_lon_after}\n"
@@ -781,26 +629,7 @@ def create_ai_metadata_context(
     )
 
     context += f"⏰ ENHANCED WORK TIMELINE VALIDATION:\n"
-    # ENHANCED DATE/TIMELINE VALIDATION SECTION
-    issued_date = (
-        work_order_context.get("issuedDate", "N/A") if work_order_context else "N/A"
-    )
-    completed_date = (
-        work_order_context.get("completedDate", "N/A") if work_order_context else "N/A"
-    )
-    approved_date = (
-        work_order_context.get("approvedDate", "N/A") if work_order_context else "N/A"
-    )
-    closed_date = (
-        work_order_context.get("closedDate", "N/A") if work_order_context else "N/A"
-    )
-
-    context += f"⏰ ENHANCED WORK TIMELINE VALIDATION:\n"
     context += f"• Work Order Issued: {issued_date}\n"
-    context += f"• Work Completed: {completed_date}\n"
-    context += f"• Work Approved: {approved_date}\n"
-    context += f"• Work Closed: {closed_date}\n"
-    context += f"• Timeline Status: {'✅ Dates Available' if issued_date != 'N/A' and completed_date != 'N/A' else '❌ Missing Dates'}\n\n"
     context += f"• Work Completed: {completed_date}\n"
     context += f"• Work Approved: {approved_date}\n"
     context += f"• Work Closed: {closed_date}\n"
@@ -851,65 +680,7 @@ def generate_comparisons_with_ai_validation(work_orders):
                 try:
                     before_data = encode_image(before_path)
                     after_data = encode_image(after_path)
-def generate_comparisons_with_ai_validation(work_orders):
-    """
-    Generate comparison analysis with AI-based validation for multiple work orders.
-    Each work_order should be a dict:
-    {
-        "id": "WO123",
-        "before_images": ["/path/to/before1.jpg", "/path/to/before2.jpg"],
-        "after_images":  ["/path/to/after1.jpg",  "/path/to/after2.jpg"],
-        "before_metadata": {...},   # optional
-        "after_metadata": {...},    # optional
-        "work_order_context": {...} # optional
-    }
-    """
-    results = []
 
-    for wo in work_orders:
-        try:
-            before_images = wo.get("before_images", [])
-            after_images = wo.get("after_images", [])
-            before_metadata = wo.get("before_metadata")
-            after_metadata = wo.get("after_metadata")
-            work_order_context = wo.get("work_order_context")
-
-            # ✅ Pair correctly: match min length to avoid IndexError
-            total_pairs = min(len(before_images), len(after_images))
-
-            if total_pairs == 0:
-                results.append(
-                    {
-                        "work_order_id": wo.get("id"),
-                        "error": "No valid before/after image pairs found",
-                    }
-                )
-                continue
-
-            for idx in range(total_pairs):
-                before_path = before_images[idx]
-                after_path = after_images[idx]
-
-                try:
-                    before_data = encode_image(before_path)
-                    after_data = encode_image(after_path)
-
-                    # Build metadata context if available
-                    metadata_context = ""
-                    if before_metadata and after_metadata:
-                        metadata_context = create_ai_metadata_context(
-                            before_metadata, after_metadata, work_order_context
-                        )
-
-                    # Enhanced prompt
-                    user_content = (
-                        f"Compare these before and after images for work order {wo['id']} (pair {idx+1}). "
-                        f"Use the complete work order context including property details, vendor information, "
-                        f"BDA type classifications, and photo type specifications. "
-                        f"Validate GPS coordinates against property location, timeline compliance with work dates, "
-                        f"and type classifications against actual database values. "
-                        f"{metadata_context}"
-                    )
                     # Build metadata context if available
                     metadata_context = ""
                     if before_metadata and after_metadata:
@@ -948,27 +719,6 @@ def generate_comparisons_with_ai_validation(work_orders):
                             ],
                         },
                     ]
-                    messages = [
-                        {"role": "system", "content": get_system_prompt()},
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": user_content},
-                                {
-                                    "type": "image_url",
-                                    "image_url": {
-                                        "url": f"data:image/jpeg;base64,{before_data}"
-                                    },
-                                },
-                                {
-                                    "type": "image_url",
-                                    "image_url": {
-                                        "url": f"data:image/jpeg;base64,{after_data}"
-                                    },
-                                },
-                            ],
-                        },
-                    ]
 
                     response = client.chat.completions.create(
                         model=config.AZURE_DEPLOYMENT_NAME,
@@ -976,45 +726,7 @@ def generate_comparisons_with_ai_validation(work_orders):
                         max_tokens=3000,
                         temperature=0.2,
                     )
-                    response = client.chat.completions.create(
-                        model=config.AZURE_DEPLOYMENT_NAME,
-                        messages=messages,
-                        max_tokens=3000,
-                        temperature=0.2,
-                    )
 
-                    results.append(
-                        {
-                            "work_order_id": wo["id"],
-                            "pair_index": idx + 1,
-                            "before_image": before_path,
-                            "after_image": after_path,
-                            "analysis": response.choices[0].message.content.strip(),
-                        }
-                    )
-
-                except Exception as pair_err:
-                    logger.error(
-                        f"Failed to process pair {idx+1} for WO {wo.get('id')}: {pair_err}"
-                    )
-                    results.append(
-                        {
-                            "work_order_id": wo.get("id"),
-                            "pair_index": idx + 1,
-                            "before_image": before_path,
-                            "after_image": after_path,
-                            "error": str(pair_err),
-                        }
-                    )
-
-            # ✅ If before/after counts mismatched, log warning
-            if len(before_images) != len(after_images):
-                results.append(
-                    {
-                        "work_order_id": wo.get("id"),
-                        "warning": f"Mismatched counts: {len(before_images)} before vs {len(after_images)} after images. Extra images ignored.",
-                    }
-                )
                     results.append(
                         {
                             "work_order_id": wo["id"],
@@ -1053,6 +765,132 @@ def generate_comparisons_with_ai_validation(work_orders):
             results.append({"work_order_id": wo.get("id"), "error": str(e)})
 
     return results
+
+
+# FIXED: Replace your existing group_images_by_bda_type function
+# def group_images_by_bda_type(images_data):
+#     """FIXED: Enhanced grouping that creates ALL possible before/after pairs"""
+#     from collections import defaultdict
+
+#     bda_groups = defaultdict(list)
+
+#     # Group images by bda_type_name (case-insensitive)
+#     for img_data in images_data:
+#         bda_type_name = img_data.get("bda_type_name", "Unknown").lower().strip()
+#         bda_groups[bda_type_name].append(img_data)
+
+#     logger.info(f"BDA groups found: {list(bda_groups.keys())}")
+
+#     comparison_pairs = []
+
+#     # Collect before/after images
+#     before_images = []
+#     after_images = []
+
+#     # Look for before/after type names
+#     for bda_name, imgs in bda_groups.items():
+#         if "before" in bda_name:
+#             before_images.extend(imgs)
+#             logger.info(f"Found {len(imgs)} before images: {bda_name}")
+#         elif "after" in bda_name:
+#             after_images.extend(imgs)
+#             logger.info(f"Found {len(imgs)} after images: {bda_name}")
+
+#     if not before_images or not after_images:
+#         logger.info("No clear before/after BDA types, trying photo type pairing...")
+#         # Group by photo type instead
+#         photo_groups = defaultdict(list)
+#         for img_data in images_data:
+#             photo_type = img_data.get("photo_type_name", "unknown").lower().strip()
+#             photo_groups[photo_type].append(img_data)
+
+#         # Create pairs within each photo type (first half vs second half)
+#         for photo_type, imgs in photo_groups.items():
+#             if len(imgs) >= 2:
+#                 mid = len(imgs) // 2
+#                 befores = imgs[:mid] if mid > 0 else [imgs[0]]
+#                 afters = imgs[mid:] if mid < len(imgs) else imgs[1:]
+
+#                 pair_counter = 1
+#                 for i, before_img in enumerate(befores):
+#                     for j, after_img in enumerate(afters):
+#                         if before_img != after_img:
+#                             comparison_pairs.append(
+#                                 {
+#                                     "before": before_img,
+#                                     "after": after_img,
+#                                     "set_id": f"{photo_type}_pair_{pair_counter}",
+#                                     "comparison_type": "photo_type_pairing",
+#                                 }
+#                             )
+#                             pair_counter += 1
+#                             logger.info(
+#                                 f"Photo type pair: {before_img['original_filename']} <-> {after_img['original_filename']}"
+#                             )
+
+#         logger.info(f"Created {len(comparison_pairs)} pairs using photo type matching")
+#         return comparison_pairs
+
+#     # Group by photo type within before/after categories
+#     before_by_photo_type = defaultdict(list)
+#     after_by_photo_type = defaultdict(list)
+
+#     for img in before_images:
+#         photo_type = img.get("photo_type_name", "unknown").lower().strip()
+#         before_by_photo_type[photo_type].append(img)
+
+#     for img in after_images:
+#         photo_type = img.get("photo_type_name", "unknown").lower().strip()
+#         after_by_photo_type[photo_type].append(img)
+
+#     logger.info(f"Before photo types: {list(before_by_photo_type.keys())}")
+#     logger.info(f"After photo types: {list(after_by_photo_type.keys())}")
+
+#     # Create ALL possible pairs within each photo type
+#     pair_counter = 1
+#     for photo_type in before_by_photo_type.keys():
+#         if photo_type in after_by_photo_type:
+#             befores = before_by_photo_type[photo_type]
+#             afters = after_by_photo_type[photo_type]
+
+#             logger.info(
+#                 f"Creating pairs for '{photo_type}': {len(befores)} before × {len(afters)} after = {len(befores) * len(afters)} pairs"
+#             )
+
+#             # Create all combinations
+#             for i, before_img in enumerate(befores):
+#                 for j, after_img in enumerate(afters):
+#                     comparison_pairs.append(
+#                         {
+#                             "before": before_img,
+#                             "after": after_img,
+#                             "set_id": f"{photo_type}_pair_{pair_counter}",
+#                             "comparison_type": "bda_photo_type_based_pairing",
+#                         }
+#                     )
+#                     pair_counter += 1
+#                     logger.info(
+#                         f"Pair {pair_counter-1}: {before_img['original_filename']} <-> {after_img['original_filename']}"
+#                     )
+
+#     # Fallback: sequential pairing if no photo type matches
+#     if not comparison_pairs and before_images and after_images:
+#         logger.info("No photo type matches, using sequential pairing...")
+#         max_pairs = min(len(before_images), len(after_images))
+#         for i in range(max_pairs):
+#             comparison_pairs.append(
+#                 {
+#                     "before": before_images[i],
+#                     "after": after_images[i],
+#                     "set_id": f"sequential_pair_{i+1}",
+#                     "comparison_type": "sequential_pairing",
+#                 }
+#             )
+
+#     logger.info(
+#         f"Created {len(comparison_pairs)} total pairs using BDA/photo type matching"
+#     )
+#     return comparison_pairs
 
 
 def group_images_by_bda_type(images_data):
@@ -1221,59 +1059,6 @@ def group_images_by_filename(images_data):
     logger.info(f"Created {len(comparison_pairs)} pairs from filename matching")
     return comparison_pairs
     """Fallback grouping function for filename-based pairing"""
-    """FIXED: Enhanced filename-based pairing that creates multiple pairs"""
-    before_images = []
-    after_images = []
-
-    # Separate before and after images
-    for img_data in images_data:
-        filename_lower = img_data["filename"].lower()
-        bda_type_name = img_data.get("bda_type_name", "").lower()
-
-        if "before" in bda_type_name or filename_lower.startswith("before_"):
-            before_images.append(img_data)
-        elif "after" in bda_type_name or filename_lower.startswith("after_"):
-            after_images.append(img_data)
-
-    logger.info(
-        f"Filename classification: {len(before_images)} before, {len(after_images)} after"
-    )
-
-    comparison_pairs = []
-
-    # Create ALL possible pairs
-    if before_images and after_images:
-        pair_counter = 1
-        for i, before_img in enumerate(before_images):
-            for j, after_img in enumerate(after_images):
-                comparison_pairs.append(
-                    {
-                        "before": before_img,
-                        "after": after_img,
-                        "set_id": f"filename_pair_{pair_counter}",
-                        "comparison_type": "filename_based_pairing",
-                    }
-                )
-                pair_counter += 1
-                logger.info(
-                    f"Filename pair {pair_counter-1}: {before_img['original_filename']} <-> {after_img['original_filename']}"
-                )
-
-    # Fallback: sequential pairing of all images
-    elif len(images_data) >= 2:
-        for i in range(len(images_data) - 1):
-            comparison_pairs.append(
-                {
-                    "before": images_data[i],
-                    "after": images_data[i + 1],
-                    "set_id": f"sequential_fallback_{i+1}",
-                    "comparison_type": "sequential_fallback_pairing",
-                }
-            )
-
-    logger.info(f"Created {len(comparison_pairs)} pairs from filename matching")
-    return comparison_pairs
-    """Fallback grouping function for filename-based pairing"""
     before_images = []
     after_images = []
 
@@ -1284,22 +1069,10 @@ def group_images_by_filename(images_data):
 
         # Use BDA type name if available, otherwise filename
         if "before" in bda_type_name or filename_lower.startswith("before_"):
-        bda_type_name = img_data.get("bda_type_name", "").lower()
-
-        # Use BDA type name if available, otherwise filename
-        if "before" in bda_type_name or filename_lower.startswith("before_"):
             before_images.append(img_data)
-        elif "after" in bda_type_name or filename_lower.startswith("after_"):
         elif "after" in bda_type_name or filename_lower.startswith("after_"):
             after_images.append(img_data)
 
-    def extract_image_type(img_data):
-        """Extract the type from image data using photo type or filename"""
-        photo_type = img_data.get("photo_type_name", "")
-        if photo_type and photo_type != "Unknown":
-            return photo_type.lower().replace(" ", "_")
-
-        filename_lower = img_data["filename"].lower()
     def extract_image_type(img_data):
         """Extract the type from image data using photo type or filename"""
         photo_type = img_data.get("photo_type_name", "")
@@ -1328,12 +1101,10 @@ def group_images_by_filename(images_data):
 
     for img in before_images:
         img_type = extract_image_type(img)
-        img_type = extract_image_type(img)
         if img_type:
             before_by_type[img_type] = img
 
     for img in after_images:
-        img_type = extract_image_type(img)
         img_type = extract_image_type(img)
         if img_type:
             after_by_type[img_type] = img
@@ -1352,7 +1123,6 @@ def group_images_by_filename(images_data):
             )
 
     logger.info(
-        f"Created {len(comparison_pairs)} comparison pairs from filename matching"
         f"Created {len(comparison_pairs)} comparison pairs from filename matching"
     )
     return comparison_pairs
@@ -1638,7 +1408,6 @@ def upload():
     """WORKING FIX: Properly handle your exact payload structure"""
     try:
         # Extract form data
-        # Extract form data
         uploaded_files = request.files.getlist("images")
         image_types = request.form.getlist("imageTypes")
         photo_types = request.form.getlist("photoTypes")
@@ -1694,8 +1463,6 @@ def upload():
         # Create directories
         os.makedirs(config.UPLOAD_FOLDER, exist_ok=True)
         os.makedirs(config.OUTPUT_FOLDER, exist_ok=True)
-        os.makedirs(config.UPLOAD_FOLDER, exist_ok=True)
-        os.makedirs(config.OUTPUT_FOLDER, exist_ok=True)
 
         # Process uploaded files - IGNORE the problematic bdaTypeNames/photoTypeNames arrays
         all_images_data = []
@@ -1714,7 +1481,6 @@ def upload():
                     400,
                 )
 
-            if not validate_file_size(io.BytesIO(file_content)):
             if not validate_file_size(io.BytesIO(file_content)):
                 return jsonify({"error": f"File too large: {file.filename}"}), 400
 
@@ -1827,7 +1593,6 @@ def upload():
                 jsonify(
                     {
                         "error": "Could not create any comparison pairs",
-                        "error": "Could not create any comparison pairs",
                         "debug": {
                             "order_images": len(order_images),
                             "property_images": len(property_images),
@@ -1852,7 +1617,6 @@ def upload():
                 f"  Pair {i+1}: {pair['before']['original_filename']} <-> {pair['after']['original_filename']}"
             )
 
-        # Process comparison pairs
         # Process comparison pairs
         results = []
         for pair_index, pair_data in enumerate(comparison_pairs):
@@ -1980,22 +1744,7 @@ def process_comparison_pair(pair_data, pair_index, total_pairs, work_order_conte
     logger.info(f"Processing pair {pair_index + 1}/{total_pairs}")
     logger.info(f"Before: {before_img['filename']}")
     logger.info(f"After: {after_img['filename']}")
-    logger.info(f"Processing pair {pair_index + 1}/{total_pairs}")
-    logger.info(f"Before: {before_img['filename']}")
-    logger.info(f"After: {after_img['filename']}")
 
-    try:
-        # Prepare metadata for AI analysis
-        before_metadata = {
-            "bda_type_id": before_img.get("bda_type_id"),
-            "bda_type_name": before_img.get("bda_type_name"),
-            "photo_type_id": before_img.get("photo_type_id"),
-            "photo_type_name": before_img.get("photo_type_name"),
-            "form_latitude": before_img.get("form_latitude"),
-            "form_longitude": before_img.get("form_longitude"),
-            "bda_type_names": [before_img.get("bda_type_name", "")],
-            "photo_type_names": [before_img.get("photo_type_name", "")],
-        }
     try:
         # Prepare metadata for AI analysis
         before_metadata = {
@@ -2060,61 +1809,7 @@ def process_comparison_pair(pair_data, pair_index, total_pairs, work_order_conte
             status = "pending"
         else:
             status = "rejected"
-        after_metadata = {
-            "bda_type_id": after_img.get("bda_type_id"),
-            "bda_type_name": after_img.get("bda_type_name"),
-            "photo_type_id": after_img.get("photo_type_id"),
-            "photo_type_name": after_img.get("photo_type_name"),
-            "form_latitude": after_img.get("form_latitude"),
-            "form_longitude": after_img.get("form_longitude"),
-            "bda_type_names": [after_img.get("bda_type_name", "")],
-            "photo_type_names": [after_img.get("photo_type_name", "")],
-        }
 
-        # Generate AI comparison
-        # comparison_result = generate_comparison_with_ai_validation(
-        #     before_img["path"],
-        #     after_img["path"],
-        #     before_metadata,
-        #     after_metadata,
-        #     work_order_context,
-        # )
-
-        comparison_result = generate_comparisons_with_ai_validation(
-            [
-                {
-                    "id": work_order_context.get("id", "WO_UNKNOWN"),
-                    "before_images": [before_img["path"]],
-                    "after_images": [after_img["path"]],
-                    "before_metadata": before_metadata,
-                    "after_metadata": after_metadata,
-                    "work_order_context": work_order_context,
-                }
-            ]
-        )[0]["analysis"]
-
-        # FIXED: Log the raw AI response for debugging
-        logger.info(f"=== RAW AI RESPONSE FOR PAIR {pair_index + 1} ===")
-        logger.info(f"Response length: {len(comparison_result)}")
-        logger.info(f"First 500 chars: {comparison_result[:500]}...")
-
-        # Extract structured data from AI response
-        structured_data, score, confidence, estimated_cost, validation_results = (
-            extract_ai_results(comparison_result)
-        )
-
-        # Determine status
-        metadata_valid = True  # Simplified for now
-        if score >= 80 and metadata_valid:
-            status = "approved"
-        elif score >= 50:
-            status = "pending"
-        else:
-            status = "rejected"
-
-        # Convert images to base64
-        before_base64 = encode_image_to_base64(before_img["path"])
-        after_base64 = encode_image_to_base64(after_img["path"])
         # Convert images to base64
         before_base64 = encode_image_to_base64(before_img["path"])
         after_base64 = encode_image_to_base64(after_img["path"])
@@ -2190,120 +1885,7 @@ def generate_response_data(
     average_score = total_score / len(results) if results else 0
     approved_count = sum(1 for r in results if r["status"] == "approved")
     metadata_valid_count = sum(1 for r in results if r["metadata_valid"])
-        if not before_base64 or not after_base64:
-            logger.error(f"Failed to encode images for pair {pair_index + 1}")
-            return None
 
-        # Remove JSON from HTML and convert to HTML
-        html_content = re.sub(
-            r"```json\s*\{.*?\}\s*```", "", comparison_result, flags=re.DOTALL
-        )
-        result_html = markdown.markdown(
-            html_content, extensions=["fenced_code", "tables", "nl2br"]
-        )
-
-        return {
-            "pair_number": pair_index + 1,
-            "set_id": set_id,
-            "before": before_base64,
-            "after": after_base64,
-            "before_filename": before_img["original_filename"],
-            "after_filename": after_img["original_filename"],
-            "comparison_type": comparison_type,
-            "score": score,
-            "confidence": confidence,
-            "estimated_cost": estimated_cost,
-            "status": status,
-            "data": structured_data,
-            "html": result_html,
-            "validation_results": validation_results,
-            "metadata_valid": metadata_valid,
-            "before_metadata": before_metadata,
-            "after_metadata": after_metadata,
-            "work_order_context": work_order_context,
-        }
-
-    except Exception as e:
-        logger.error(f"Error in process_comparison_pair: {e}")
-        return None
-
-
-def extract_ai_results(comparison_result):
-    """Extract structured data from AI response"""
-    structured_data = {}
-    score = 75  # Default score
-    confidence = 95
-    estimated_cost = "50-100"
-    validation_results = {}
-
-    try:
-        json_match = re.search(
-            r"```json\s*(\{.*?\})\s*```", comparison_result, re.DOTALL
-        )
-        if json_match:
-            structured_data = json.loads(json_match.group(1))
-            score = structured_data.get("score", 75)
-            confidence = structured_data.get("confidence", 95)
-            estimated_cost = structured_data.get("repair_cost", "50-100")
-            validation_results = structured_data.get("validation_results", {})
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON parsing error: {e}")
-
-    return structured_data, score, confidence, estimated_cost, validation_results
-
-
-def generate_response_data(
-    results, work_order_context, property_images, upload_count, order_count
-):
-    """Generate final response data"""
-    # Calculate statistics
-    total_score = sum(r["score"] for r in results)
-    average_score = total_score / len(results) if results else 0
-    approved_count = sum(1 for r in results if r["status"] == "approved")
-    metadata_valid_count = sum(1 for r in results if r["metadata_valid"])
-
-    # Generate HTML report
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_filename = f"comparison_report_{len(results)}pairs_{timestamp}.html"
-
-    try:
-        generate_html_report(
-            results, work_order_context, property_images, report_filename, timestamp
-        )
-    except Exception as e:
-        logger.error(f"Failed to generate HTML report: {e}")
-
-    return {
-        "success": True,
-        "message": f"Successfully processed {len(results)} comparison pair{'s' if len(results) > 1 else ''}",
-        "results": results,
-        "total_pairs": len(results),
-        "report_type": "combined" if len(results) > 1 else "single",
-        "filePath": report_filename,
-        "average_score": round(average_score, 1),
-        "approved_count": approved_count,
-        "metadata_valid_count": metadata_valid_count,
-        "property_image_count": len(property_images),
-        "order_image_count": order_count,
-        "work_order_information": work_order_context,
-        "validation_statistics": {
-            "gps_validation_rate": (
-                f"{(metadata_valid_count / len(results) * 100):.1f}%"
-                if results
-                else "0%"
-            ),
-            "date_validation_rate": (
-                f"{(metadata_valid_count / len(results) * 100):.1f}%"
-                if results
-                else "0%"
-            ),
-            "overall_compliance_rate": (
-                f"{(metadata_valid_count / len(results) * 100):.1f}%"
-                if results
-                else "0%"
-            ),
-        },
-    }
     # Generate HTML report
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     report_filename = f"comparison_report_{len(results)}pairs_{timestamp}.html"
@@ -2481,8 +2063,6 @@ def format_date(date_string):
 @generatecomparison.route("/chatgenie/v1/pdf/<html_name>", methods=["GET"])
 def generate_pdf_report(html_name):
     """Generate PDF from HTML report"""
-def generate_pdf_report(html_name):
-    """Generate PDF from HTML report"""
     try:
         safe_filename = secure_filename(html_name)
         if not safe_filename.lower().endswith(".html"):
@@ -2490,18 +2070,13 @@ def generate_pdf_report(html_name):
 
         file_path = os.path.join(config.OUTPUT_FOLDER, safe_filename)
 
-        file_path = os.path.join(config.OUTPUT_FOLDER, safe_filename)
-
         if not os.path.exists(file_path):
             return jsonify({"error": "Report not found"}), 404
 
         # Read and process HTML content
-        # Read and process HTML content
         with open(file_path, "r", encoding="utf-8") as f:
             html_content = f.read()
 
-        # Generate PDF
-        pdf_bytes = asyncio.run(html_string_to_pdf_bytes(html_content))
         # Generate PDF
         pdf_bytes = asyncio.run(html_string_to_pdf_bytes(html_content))
         pdf_filename = safe_filename.rsplit(".", 1)[0] + ".pdf"
@@ -2535,50 +2110,16 @@ async def html_string_to_pdf_bytes(html_content):
             )
             await browser.close()
             return pdf_bytes
-        logger.error(f"PDF generation error: {e}")
-        return jsonify({"error": f"PDF generation failed: {str(e)}"}), 500
-
-
-# PDF generation utility function
-async def html_string_to_pdf_bytes(html_content):
-    """Convert HTML string to PDF bytes using Playwright"""
-    browser = None
-    try:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
-            await page.set_content(html_content, wait_until="networkidle")
-            pdf_bytes = await page.pdf(
-                format="A4",
-                print_background=True,
-                margin={"top": "0in", "right": "0in", "bottom": "0in", "left": "0in"},
-            )
-            await browser.close()
-            return pdf_bytes
     except Exception as e:
         if browser:
             await browser.close()
         logger.error(f"PDF generation failed: {e}")
         raise
-        if browser:
-            await browser.close()
-        logger.error(f"PDF generation failed: {e}")
-        raise
 
 
-# Error handlers
 # Error handlers
 @generatecomparison.errorhandler(413)
 def too_large(e):
-    return (
-        jsonify(
-            {
-                "error": "File too large",
-                "max_size": f"{MAX_FILE_SIZE / (1024*1024):.1f}MB",
-            }
-        ),
-        413,
-    )
     return (
         jsonify(
             {
@@ -2592,21 +2133,6 @@ def too_large(e):
 
 @generatecomparison.errorhandler(500)
 def internal_error(e):
-    logger.error(f"Internal server error: {e}")
-    return (
-        jsonify(
-            {
-                "error": "Internal server error",
-                "message": "Please check the logs for details",
-            }
-        ),
-        500,
-    )
-
-
-@generatecomparison.errorhandler(404)
-def not_found(e):
-    return jsonify({"error": "Resource not found"}), 404
     logger.error(f"Internal server error: {e}")
     return (
         jsonify(
