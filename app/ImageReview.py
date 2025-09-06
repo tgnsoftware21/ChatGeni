@@ -2038,8 +2038,29 @@ def generate_html_report(
 from datetime import datetime
 
 
+# def format_date(date_string):
+#     """Format date string to show only date and time (HH:MM)"""
+#     if not date_string or date_string == "N/A":
+#         return ""
+
+#     try:
+#         # Parse the date string - adjust the format based on your actual date format
+#         if "T" in date_string:
+#             # Format: 2025-08-28T19:33:36.48
+#             dt = datetime.fromisoformat(date_string.replace("T", " ").split(".")[0])
+#         else:
+#             # Format: 07/28/2025 00:00:00
+#             dt = datetime.strptime(date_string, "%m/%d/%Y %H:%M:%S")
+
+#         # Return formatted as: MM/DD/YYYY HH:MM
+#         return dt.strftime("%m/%d/%Y %H:%M")
+#     except:
+#         # If parsing fails, return original string
+#         return date_string
+
+
 def format_date(date_string):
-    """Format date string to show only date and time (HH:MM)"""
+    """Format date string to show only date in MM/DD/YY format"""
     if not date_string or date_string == "N/A":
         return ""
 
@@ -2048,14 +2069,25 @@ def format_date(date_string):
         if "T" in date_string:
             # Format: 2025-08-28T19:33:36.48
             dt = datetime.fromisoformat(date_string.replace("T", " ").split(".")[0])
+        elif "/" in date_string and len(date_string.split("/")[0]) == 2:
+            # Format: 14/08/2025 19:33 (DD/MM/YYYY) - adjust parsing
+            dt = datetime.strptime(date_string.split(" ")[0], "%d/%m/%Y")
         else:
-            # Format: 07/28/2025 00:00:00
-            dt = datetime.strptime(date_string, "%m/%d/%Y %H:%M:%S")
+            # Format: 07/28/2025 00:00:00 (MM/DD/YYYY)
+            dt = datetime.strptime(date_string.split(" ")[0], "%m/%d/%Y")
 
-        # Return formatted as: MM/DD/YYYY HH:MM
-        return dt.strftime("%m/%d/%Y %H:%M")
+        # Return formatted as: MM/DD/YY
+        return dt.strftime("%m/%d/%y")
     except:
-        # If parsing fails, return original string
+        # If parsing fails, return original string without time
+        if " " in date_string:
+            date_part = date_string.split(" ")[0]
+            # Try to convert YYYY to YY if possible
+            if "/" in date_part:
+                parts = date_part.split("/")
+                if len(parts) == 3 and len(parts[2]) == 4:
+                    return f"{parts[0]}/{parts[1]}/{parts[2][-2:]}"
+            return date_part
         return date_string
 
 
